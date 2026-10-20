@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
-import { setCache, getPolicy, getRoleMeta } from "../cache.js";
-import { getService } from "../servicesCache.js";
+import { getPolicy, getRoleMeta } from "../cache.js";
 import { getModel } from "../appRegistry.js";
 import { getTenantStore } from "../../tenant/tenantContext.js";
 import { fileURLToPath, pathToFileURL } from "url";
@@ -39,7 +38,7 @@ export async function resolvePolicy(ctx, targetModelName) {
           roleMeta = getRoleMeta(roleIdOrName);
         }
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   if (!roleMeta && tenantContext && typeof tenantContext.getModel === 'function') {
@@ -62,7 +61,7 @@ export async function resolvePolicy(ctx, targetModelName) {
           };
         }
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   const isSuperAdmin = !!user?.isSuperAdmin ||
@@ -122,7 +121,7 @@ export async function resolvePolicy(ctx, targetModelName) {
           };
         }
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   if (!policy && ['release_notes', 'notifications', 'notification_preferences', 'notificationreceptionist', 'notificationrules', 'notification_deliveries', 'session', 'auditlog', 'dashboard_schemas', 'dashboard_widgets'].includes(targetModelName.toLowerCase())) {

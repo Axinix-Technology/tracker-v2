@@ -12,7 +12,6 @@
  *   node Backend/src/scripts/test-attendance-policy-rules.js
  */
 
-import mongoose from 'mongoose';
 import { computeSalary, calculateHourlyRate } from '../services/business/payrollEngine.js';
 
 // ASCII Formatting Helpers
@@ -42,7 +41,7 @@ async function runTests() {
   // TEST 1: Casual Leave Encashment (Monthly & Year-End Cycles)
   // --------------------------------------------------------------------------------
   console.log(bold('▶ Test Suite 1: Unused CL Encashment in Payroll (Monthly & Year-End Cycles)'));
-  
+
   const mockSalaryStructure = {
     earnings: [
       { name: 'Basic', amount: 30000, isProratable: true },

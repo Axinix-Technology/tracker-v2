@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JarvisCore } from '../core/JarvisCore.js';
-import { JarvisContext } from '../core/JarvisContext.js';
 import { IntentClassifier } from '../stages/IntentClassifier.js';
 import { TokenRegistry, TokenType } from '../tokens/TokenRegistry.js';
 import { RelationshipGraph } from '../tokens/RelationshipGraph.js';
@@ -147,7 +146,7 @@ test('🧠 J.A.R.V.I.S. Scientific Neural Generalization & Knowledge Universe Pr
     const res2 = neuralResolver.resolve('Who was responsible for the Veltrix Core?');
     console.log(`  -> Held-Out Query 1: "Who built the Veltrix Core?" | Output: "${res1.answer}" | Conf: ${res1.confidence.toFixed(4)}`);
     console.log(`  -> Held-Out Query 2: "Who was responsible for the Veltrix Core?" | Output: "${res2.answer}" | Conf: ${res2.confidence.toFixed(4)}`);
-    
+
     // Evaluate if output accurately generalized
     if (res1.answer.includes('Arun Veyra') || res2.answer.includes('Arun Veyra')) {
       metrics.generalization = 'PASS';
@@ -178,7 +177,7 @@ test('🧠 J.A.R.V.I.S. Scientific Neural Generalization & Knowledge Universe Pr
   // --- TEST 8: Weight Perturbation Test (Proves dependence on θ) ---
   await t.test('8. Weight Perturbation Test (Proves Non-Symbolic θ Execution)', () => {
     const beforeRes = neuralResolver.resolve('Who engineered the Veltrix Core?');
-    
+
     // Snapshot original weights
     const origWte = new Float64Array(neuralCore.weights.wte);
     // Perturb token embeddings randomly

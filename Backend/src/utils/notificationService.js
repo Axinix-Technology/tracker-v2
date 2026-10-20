@@ -1,4 +1,4 @@
-import { io, activeConnections } from "../index.js";
+import { io } from "../index.js";
 import models from "../models/Collection.js";
 
 const notification = models.notifications;

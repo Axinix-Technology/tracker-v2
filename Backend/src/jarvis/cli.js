@@ -2,14 +2,11 @@ import readline from 'readline';
 import dotenv from 'dotenv';
 import defaultJarvis from './index.js';
 import connectDB from '../Config/ConnectDB.js';
-import { defaultTokenEngine } from './tokens/TokenEngine.js';
-import { defaultMongoBrainMemoryStore } from './providers/MongoBrainMemoryStore.js';
 
 dotenv.config();
 
 import { defaultRelationshipGraph } from './tokens/RelationshipGraph.js';
 import { defaultTokenRegistry } from './tokens/TokenRegistry.js';
-import { defaultGraphReasoner } from './reasoning/GraphReasoner.js';
 import { defaultModularExpertSpawner } from './neural/ModularExpertSpawner.js';
 import { defaultCapacityGovernor } from './neural/CapacityGovernor.js';
 import { defaultJarvisNeuralCore } from './neural/JarvisNeuralCore.js';

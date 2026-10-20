@@ -1,5 +1,4 @@
 import { buildQuery } from "../utils/policy/policyEngine.js";
-import { getRoleMeta } from "../utils/cache.js";
 import { parseFilter } from "../utils/filterParser.js";
 import queryOptimizer from "../utils/queryOptimizer.js";
 import { DEFAULT_POPULATE_FIELDS } from "../Config/defaultPopulateFields.js";

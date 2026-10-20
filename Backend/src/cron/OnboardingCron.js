@@ -1,7 +1,6 @@
 import cron from 'node-cron';
 import Onboarding from '../models/Onboarding.js';
 import general_settings from '../models/GeneralSettings.js';
-import asyncNotificationService from '../utils/notification/asyncNotificationService.js';
 
 class OnboardingCron {
   constructor() {

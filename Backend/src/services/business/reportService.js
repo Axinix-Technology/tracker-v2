@@ -1,4 +1,3 @@
-import mongoose from 'mongoose';
 import models from '../../models/Collection.js';
 import { getTenantModel } from '../../tenant/tenantContext.js';
 
@@ -608,37 +607,37 @@ class ReportService {
       const clientNameLower = (client.name || '').trim().toLowerCase();
 
       // Check Invoices & Orders (matching by ObjectId or client name)
-      const clientInvoices = invoices.filter(i => 
-        i.clientId?.toString() === clientIdStr || 
+      const clientInvoices = invoices.filter(i =>
+        i.clientId?.toString() === clientIdStr ||
         i.client?.toString() === clientIdStr ||
         (i.clientName && i.clientName.trim().toLowerCase() === clientNameLower)
       );
       const invoicedSum = clientInvoices.reduce((sum, i) => sum + (i.totalAmount || i.amount || 0), 0);
 
-      const clientOrders = orders.filter(o => 
-        o.clientId?.toString() === clientIdStr || 
+      const clientOrders = orders.filter(o =>
+        o.clientId?.toString() === clientIdStr ||
         o.client?.toString() === clientIdStr ||
         (o.clientName && o.clientName.trim().toLowerCase() === clientNameLower)
       );
       const orderSum = clientOrders.reduce((sum, o) => sum + (o.totalOrderValue || o.agreedValue || o.amount || 0), 0);
 
       // Check Payment Journals, Direct Payments, & Client Ledgers (Cash Collections)
-      const clientJournals = paymentJournals.filter(p => 
-        p.clientId?.toString() === clientIdStr || 
+      const clientJournals = paymentJournals.filter(p =>
+        p.clientId?.toString() === clientIdStr ||
         p.client?.toString() === clientIdStr ||
         (p.clientName && p.clientName.trim().toLowerCase() === clientNameLower)
       );
       const journalSum = clientJournals.reduce((sum, p) => sum + (p.amount || p.totalAmount || 0), 0);
 
-      const clientDirectPayments = directPayments.filter(p => 
-        p.clientId?.toString() === clientIdStr || 
+      const clientDirectPayments = directPayments.filter(p =>
+        p.clientId?.toString() === clientIdStr ||
         p.client?.toString() === clientIdStr ||
         (p.clientName && p.clientName.trim().toLowerCase() === clientNameLower)
       );
       const directPaymentSum = clientDirectPayments.reduce((sum, p) => sum + (p.amount || p.totalAmount || 0), 0);
 
-      const clientLedgerRows = clientLedgers.filter(l => 
-        l.clientId?.toString() === clientIdStr || 
+      const clientLedgerRows = clientLedgers.filter(l =>
+        l.clientId?.toString() === clientIdStr ||
         l.client?.toString() === clientIdStr ||
         (l.clientName && l.clientName.trim().toLowerCase() === clientNameLower)
       );
@@ -647,8 +646,8 @@ class ReportService {
       const totalCollections = Math.max(journalSum, directPaymentSum, ledgerCredits);
       const effectiveRevenue = invoicedSum > 0 ? invoicedSum : (orderSum > 0 ? orderSum : totalCollections);
 
-      const clientSessions = sessions.filter(s => 
-        s.clientId?.toString() === clientIdStr || 
+      const clientSessions = sessions.filter(s =>
+        s.clientId?.toString() === clientIdStr ||
         s.client?.toString() === clientIdStr ||
         (s.clientName && s.clientName.trim().toLowerCase() === clientNameLower)
       );
@@ -660,8 +659,8 @@ class ReportService {
       }, 0));
 
       const clientExpenses = expenses
-        .filter(e => 
-          e.clientId?.toString() === clientIdStr || 
+        .filter(e =>
+          e.clientId?.toString() === clientIdStr ||
           e.client?.toString() === clientIdStr ||
           (e.clientName && e.clientName.trim().toLowerCase() === clientNameLower)
         )

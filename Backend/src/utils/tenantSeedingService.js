@@ -1,7 +1,6 @@
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import pageCapabilityMappingHelper from '../Config/pageCapabilityMapping.js';
 import { setCache } from '../utils/cache.js';
 import TenantConnectionManager from '../tenant/TenantConnectionManager.js';
 import { getGlobalModels } from '../models/global/index.js';
@@ -341,7 +340,7 @@ export async function provisionTenant({
 
     try {
       await setCache();
-    } catch (_) {}
+    } catch (_) { }
 
     await updateStage(9, 'completed', 'Scoped verification passed 100%! Tenant marked Active.');
 

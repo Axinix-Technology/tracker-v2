@@ -1,6 +1,5 @@
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
-import path from 'path';
 
 /**
  * PDF Generation Service
@@ -258,7 +257,7 @@ const pdfService = {
         const empId = employee?.professionalInfo?.empId || '-';
         const department = (typeof employee?.professionalInfo?.department === 'object' ? employee?.professionalInfo?.department?.name : employee?.professionalInfo?.department) || '-';
         const designation = (typeof employee?.professionalInfo?.designation === 'object' ? employee?.professionalInfo?.designation?.name : employee?.professionalInfo?.designation) || '-';
-        
+
         let dojFormatted = '-';
         const doj = employee?.professionalInfo?.doj || employee?.professionalInfo?.dateOfJoining;
         if (doj) {
@@ -314,7 +313,7 @@ const pdfService = {
         // 1. Header Box (Company & Logo)
         const headerH = 46;
         doc.rect(startX, startY, totalWidth, headerH).strokeColor('#000000').lineWidth(1).stroke();
-        
+
         // Logo / Badge (Left 140pt)
         doc.rect(startX, startY, 140, headerH).strokeColor('#000000').stroke();
         doc.fillColor('#1E3A8A').font('Helvetica-Bold').fontSize(12).text(companyName.toUpperCase(), startX + 10, startY + 16, { width: 120, align: 'center' });

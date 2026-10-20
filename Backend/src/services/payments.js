@@ -1,9 +1,8 @@
-import models from '../models/Collection.js';
 
 
 const payments = {
   async beforeCreate(ctx) {
-      const { body } = ctx;
+    const { body } = ctx;
     // Basic validation
     if (!body.amount || body.amount <= 0) {
       throw new Error('Payment amount must be greater than zero.');
@@ -11,7 +10,7 @@ const payments = {
   },
 
   async afterUpdate(ctx) {
-      const { body, data: payment } = ctx;
+    const { body, data: payment } = ctx;
     // Logic after payment is confirmed
     if (body.status === 'Confirmed') {
       const { saveAuditLog } = await import('../utils/auditLogger.js');
@@ -20,8 +19,8 @@ const payments = {
         modelName: 'payments',
         userId: body.updatedBy || 'system',
         docId: payment._id,
-        metadata: { 
-          event: 'PAYMENT_CONFIRMED', 
+        metadata: {
+          event: 'PAYMENT_CONFIRMED',
           clientId: payment.clientId,
           amount: payment.amount,
           referenceNo: payment.referenceNo

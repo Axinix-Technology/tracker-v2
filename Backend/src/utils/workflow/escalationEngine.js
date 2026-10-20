@@ -1,7 +1,5 @@
 import models from "../../models/Collection.js";
 
-import fcmService from "../notification/fcmService.js";
-import { sendNotification } from "../notificationService.js";
 import { resolveActor } from "./actorResolver.js";
 import NotificationDispatcher from "../notification/NotificationDispatcher.js";
 
@@ -22,7 +20,7 @@ class EscalationEngine {
       if (priority) query['conditions.priorityLevel'] = priority;
 
       let config = await models.workflows.findOne(query).lean();
-      
+
       // 2. Fallback: query without priority matching
       if (!config && priority) {
         delete query['conditions.priorityLevel'];
@@ -31,8 +29,8 @@ class EscalationEngine {
 
       // 3. Fallback: query global/default model config (no department or priority)
       if (!config) {
-        config = await models.workflows.findOne({ 
-          modelName, 
+        config = await models.workflows.findOne({
+          modelName,
           triggerType: 'Escalation',
           isActive: true,
           'conditions.departmentId': { $exists: false }

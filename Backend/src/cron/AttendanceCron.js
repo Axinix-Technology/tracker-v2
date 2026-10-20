@@ -1,5 +1,3 @@
-import cron from "node-cron";
-import attendancesService from "../services/attendances.js";
 
 // Performance monitoring
 class CronMonitor {

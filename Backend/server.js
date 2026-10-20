@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { server, app, initApp } from "./src/index.js"; // 👈 initApp replaces connectDB
+import { server, initApp } from "./src/index.js"; // 👈 initApp replaces connectDB
 import os from "os";
 import https from "https";
 import memoryMonitor from "./src/utils/memoryMonitor.js";

@@ -9,7 +9,6 @@ import { ToolEngine } from './stages/ToolEngine.js';
 import { Verifier } from './stages/Verifier.js';
 import { LearningAnalyst } from './stages/LearningAnalyst.js';
 import { ResponseGenerator } from './stages/ResponseGenerator.js';
-import { ToolRegistry, defaultToolRegistry } from './tools/ToolRegistry.js';
 import { defaultTokenEngine } from './tokens/TokenEngine.js';
 import { defaultMongoBrainMemoryStore } from './providers/MongoBrainMemoryStore.js';
 import { defaultLLMManager } from './providers/LLMManager.js';

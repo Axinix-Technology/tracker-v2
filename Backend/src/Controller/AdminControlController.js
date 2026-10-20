@@ -1,10 +1,8 @@
-import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { getGlobalModels } from '../models/global/index.js';
 import TenantConnectionManager from '../tenant/TenantConnectionManager.js';
 import { generateSecret } from '../utils/tokenGenrator.js';
-import { MODULE_DEFINITIONS } from '../models/tenantRegistry.js';
-import { seedTenantDatabase, provisionTenant } from '../utils/tenantSeedingService.js';
+import { provisionTenant } from '../utils/tenantSeedingService.js';
 
 /* -------------------------------- MODULES CRUD -------------------------------- */
 

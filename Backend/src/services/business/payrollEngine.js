@@ -8,7 +8,6 @@
  * Zero static model imports allowed per Multi-Tenant SaaS Architecture Law.
  */
 
-import mongoose from 'mongoose';
 import { getTenantModel } from '../../tenant/tenantContext.js';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -263,8 +262,8 @@ function computeEmployerContributions(grossSalary, basicEarned, structure, orgSe
   const pfEmployerContribution = Math.round(pfBase * (pfPercent / 100) * 100) / 100;
 
   const esiThreshold = orgSettings.esiThreshold !== undefined ? orgSettings.esiThreshold : 21000;
-  const esiEmployerPercent = structure.esiEmployerPercent !== undefined 
-    ? structure.esiEmployerPercent 
+  const esiEmployerPercent = structure.esiEmployerPercent !== undefined
+    ? structure.esiEmployerPercent
     : (orgSettings.esiEmployerPercent !== undefined ? orgSettings.esiEmployerPercent : 3.25);
 
   const esiEmployerContribution = (structure.esiApplicable && grossSalary <= esiThreshold)
@@ -309,8 +308,8 @@ export function computeSalary(attendanceSummary, structure, clEncashmentAmount =
 
   // Overtime rate: Use configured overtimeRate from structure if available, otherwise compute from basic & working hours
   const effectiveWorkingHours = shiftWorkingHours > 0 ? shiftWorkingHours : 8;
-  const hourlyRate = structure.overtimeRate > 0 
-    ? structure.overtimeRate 
+  const hourlyRate = structure.overtimeRate > 0
+    ? structure.overtimeRate
     : ((basicMonthly > 0 && workingDays > 0) ? (basicMonthly / (workingDays * effectiveWorkingHours)) : 0);
 
   const overtimePay = round(overtimeHours * hourlyRate);

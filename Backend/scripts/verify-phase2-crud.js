@@ -3,7 +3,6 @@ import connectDB from '../src/Config/ConnectDB.js';
 import TenantConnectionManager from '../src/tenant/TenantConnectionManager.js';
 import { buildQuery } from '../src/utils/policy/policyEngine.js';
 import { createTenantContext, runWithTenantContext } from '../src/tenant/tenantContext.js';
-import buildEscalateQuery from '../src/crud/buildEscalateQuery.js';
 import safeAggregate from '../src/utils/safeAggregator.js';
 
 async function runPhase2Verification() {

@@ -1,5 +1,4 @@
 // services/regularizations.js
-import { sendNotification } from '../utils/notificationService.js';
 
 export default function regularizations() {
   return {
@@ -127,9 +126,9 @@ export default function regularizations() {
       if (prevStatus === 'Pending' && (newStatus === 'Approved' || newStatus === 'Rejected')) {
         const approvalEngine = (await import('../utils/approval/approvalEngine.js')).default;
         const result = await approvalEngine.advanceWorkflow(
-          regularization, 
-          userId, 
-          newStatus, 
+          regularization,
+          userId,
+          newStatus,
           body.approverComment || body.managerComments || ''
         );
 

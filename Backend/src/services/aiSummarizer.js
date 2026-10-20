@@ -1,6 +1,5 @@
 // src/services/aiSummarizer.js
 // Enterprise AI Work Summarization Service powered by Jarvis
-import defaultJarvis from '../jarvis/index.js';
 import { defaultToolRegistry } from '../jarvis/tools/ToolRegistry.js';
 
 /**
