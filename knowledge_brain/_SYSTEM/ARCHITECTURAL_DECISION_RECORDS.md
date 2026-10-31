@@ -185,3 +185,29 @@ Decouple payroll computation logic completely from persistence side-effects:
   - **Pure & Queue-Safe:** Calculation logic can be safely executed inside background processing queues (Bull) and API routing layers without database coupling.
   - **Testable:** Testing payroll math no longer relies on tracking Mongoose lifecycle side-effects.
 - **Trade-offs**: Requires the `beforeCreate` hook to handle cleanup of existing unapproved calculations before inserting the fresh calculation.
+
+---
+
+## [ADR-015] Backend Foundation Migration to Python Django + MySQL Populate Engine
+
+### Category
+Core Infrastructure & Engine Migration
+
+### Status
+`PLANNED` / `IN_PROGRESS`
+
+### Context
+Workhub Tracker currently utilizes Node.js/Express with MongoDB. To achieve unified relational integrity, ACID compliance, enterprise audit logging, and cross-platform architectural synergy with the enterprise standard established in `D:\Axinix Projects\E-commerce`, the backend foundation is transitioning to Python Django 6.x + MySQL.
+
+### Decision
+Port and adopt the battle-tested, 10-stage Populate Pipeline (`Ingress -> Validation -> Sanitization -> Authorization -> Parsing -> Planning -> Compilation -> Execution -> Serialization -> Finalization`) directly from `D:\Axinix Projects\E-commerce\backend\core`:
+1. **Core Populate Pipeline**: Reuses `/api/populate/<action>/<model_name>/[<object_id>]` with `@register_model` and `BaseService` lifecycle hooks.
+2. **Security & ABAC**: Reuses dynamic DB-backed `AccessPolicy` and superadmin boolean bypass.
+3. **Audit Logging**: Mandatory immutable logging in MySQL `audit_logs` via `FinalizationStage` and `ApiAuditLogMiddleware`.
+4. **Phased Rollout**: Migration proceeds phase-by-phase (Phase 1-6) documented in `docs/BACKEND_DJANGO_MYSQL_MIGRATION_PLAN.md`.
+5. **Post-Core Milestone**: Implementation of the AI-Powered Daily Work Status & Reporting System (`docs/BRS_AI_Daily_Work_Status_System.docx`) will be designed and built strictly on top of this Django + MySQL Populate foundation once the core is fully verified.
+
+### Consequences
+- **Benefits**: Enforces strict typing, query compilation AST, automated join optimization, <10ms DB lock windows, and eliminates code duplication.
+- **Trade-offs**: Requires disciplined step-by-step migration, porting of model registries, and client API URL re-pointing.
+

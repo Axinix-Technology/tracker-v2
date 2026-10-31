@@ -1,0 +1,9 @@
+# Axinix-Core Standalone Engine (git pip install)
+git+ssh://git@github.com/Axinix-Technology/Axinix-Core.git#egg=django-populate-core
+
+# HTTP & API Support
+django-cors-headers>=4.9.0
+python-dotenv>=1.2.4
+pyjwt>=2.10.0
+pymysql>=1.1.0
+cryptography>=43.0.0

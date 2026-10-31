@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../../api/axiosInstance.js';
 import { usePermissions } from '../../../hooks/usePermissions.js';
-import AttendancePolicyEditor from './AttendancePolicyEditor.jsx';
-import AttendancePreviewModal from './AttendancePreviewModal.jsx';
+import AttendancePolicyEditor from '@components/Attendance/AttendancePolicyEditor.jsx';
+import AttendancePreviewModal from '@components/Attendance/AttendancePreviewModal.jsx';
 
 export default function attendance_policiesPage() {
   const { can } = usePermissions();

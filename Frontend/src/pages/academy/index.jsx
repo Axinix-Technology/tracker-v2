@@ -1,12 +1,12 @@
 import { motion as Motion, useScroll, useSpring } from 'framer-motion';
 import { Code2 } from 'lucide-react';
 
-import AcademyHero from './AcademyHero';
-import RequestJourney from './RequestJourney';
-import SecurityLayer from './SecurityLayer';
-import CrudEngine from './CrudEngine';
-import FeatureBuilder from './FeatureBuilder';
-import DebuggingJourney from './DebuggingJourney';
+import AcademyHero from '@components/Academy/AcademyHero';
+import RequestJourney from '@components/Academy/RequestJourney';
+import SecurityLayer from '@components/Academy/SecurityLayer';
+import CrudEngine from '@components/Academy/CrudEngine';
+import FeatureBuilder from '@components/Academy/FeatureBuilder';
+import DebuggingJourney from '@components/Academy/DebuggingJourney';
 
 export default function AcademyLayout() {
   const { scrollYProgress } = useScroll();

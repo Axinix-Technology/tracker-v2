@@ -1,6 +1,6 @@
 {
   "name": "workhub-tracker-v2-root",
-  "version": "4.0.3",
+  "version": "4.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,6 +11,8 @@
     "version:bump:minor": "node scripts/version-tool.mjs bump minor",
     "version:bump:major": "node scripts/version-tool.mjs bump major",
     "verify:backend": "node scripts/verify-deploy-version.mjs --target=backend",
-    "verify:frontend": "node scripts/verify-deploy-version.mjs --target=frontend"
+    "verify:frontend": "node scripts/verify-deploy-version.mjs --target=frontend",
+    "verify:system": "node scripts/verify/run.js --system",
+    "verify:api": "node scripts/verify/check-api-contract.js"
   }
 }

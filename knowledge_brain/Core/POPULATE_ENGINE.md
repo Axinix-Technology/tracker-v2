@@ -166,5 +166,74 @@
    3. **No Logic in Controllers**: Controllers must remain generic orchestrators; all domain rules must live in `backend/src/services/<model>.js` hooks.
    4. **Tenant Cache Invalidation**: When modifying sidebar navigation or access policies, trigger `clearNavigationCache()` or `invalidatePermissions()`.
 
+   ## 9. Developer Freedom & Anti-Frustration Policy: How to Handle Complex Requirements Without Custom Routes
+
+   Developers must never feel that the Populate Engine is restrictive or that they must build a custom Express/Django route to get their work done. All complex business logic is 100% supported via Populate:
+
+   1. **Custom Business Actions & State Transitions ("Approve", "Reject", "Cancel", "Publish")**:
+      - Instead of `POST /api/leave/123/approve`, call `/api/populate/update/leave/123` with payload `{"action_intent": "approve", "remarks": "..."}`.
+      - Handled cleanly in `services/leave.js` (or Django `LeaveService`) inside `beforeUpdate` / `afterUpdate`.
+   2. **Bulk / Batch Operations ("Close 50 Tickets", "Bulk Assign")**:
+      - Instead of `POST /api/tickets/bulk-close`, call `/api/populate/bulk_update/ticket` with `{"ids": [...], "data": {"status": "CLOSED"}}`.
+      - Runs atomically in a single transaction with service hooks and audit logging per row.
+   3. **Aggregations & Analytics (Dashboard Metrics, Group By, Totals)**:
+      - Instead of `GET /api/reports/dashboard`, call `/api/populate/aggregate/<model>` passing `filter`, `groupBy`, and `metrics` (`$count`, `$sum`, `$avg`).
+      - Compiles to optimized SQL `GROUP BY` with automatic ABAC and tenant isolation.
+   4. **File & Image Uploads (Multipart Form-Data)**:
+      - Instead of `POST /api/employees/avatar`, call `/api/populate/create/<model>` or `/update/<model>/<id>` using `multipart/form-data` with `data` (JSON string) and file attachments.
+      - Automatically uploads to S3/R2/local, replaces keys with file URLs, and passes to service hooks.
+   5. **Dry-Run / Preview Calculations (Taxes, Overtime, Leave Balance)**:
+      - Instead of `POST /api/payroll/calculate`, call `/api/populate/create/payroll?dry_run=true`.
+      - Computes all formulas in `beforeCreate`, returns calculated results in the response, and rolls back the DB transaction.
+   6. **Multi-Model Sagas (Parent + Child Nested Creates)**:
+      - Instead of `POST /api/orders/checkout`, send nested JSON to `/api/populate/create/order`.
+      - Parent is created by the pipeline; child entities (`OrderItem`) are created inside `afterCreate` within the same transaction.
+   7. **Export to Excel / CSV**:
+      - Instead of `GET /api/tickets/export-excel`, call `/api/populate/export/<model>?format=xlsx|csv` with the exact same AST filter as the table view.
+
+   ### The 3-Point Strict Exemption Policy (When a Custom Route IS Legitimate)
+   A custom router/controller is ONLY permitted if it meets at least one of these 3 physical criteria:
+   1. **Raw Cryptographic Signature Verification**: Webhooks requiring verification of raw, unparsed HTTP request body bytes before JSON parsing (e.g., Stripe, Razorpay HMAC, GitHub webhooks).
+   2. **Stateful Session Handshakes**: Interactive auth handshakes (OAuth2 redirects, SAML/SSO callbacks, WebAuthn/FIDO2).
+   3. **Continuous Binary Streaming**: Non-JSON streaming where buffering into memory or S3 is impossible (live video transcoding, 5GB dynamic ZIP archive stream).
+   *If it does not meet one of these 3, it CAN and MUST be handled in Populate + Service Hooks.*
+
+   ## 10. Granular Pipeline Directives & Per-Model Limit Overrides (Safe Defaults, Flexible Tuning)
+
+   To prevent developers from feeling that global limits (e.g. 5s query timeout, 3 prefetch depth, read auditing) are a bottleneck:
+   - **Non-Negotiable (Never Bypassed)**: Parameterized SQL compilation, tenant data-plane isolation, ABAC authorization, and dangerous input sanitization.
+   - **Configurable / Tunable Per Model**:
+     1. **Selective Read Auditing**: Mutations (`create`, `update`, `delete`) are always audited. High-frequency models (`GeneralSettings`, `Notification`) skip read auditing to avoid 10M row database bloat; sensitive models (`Payroll`) opt-in to `audit_reads=True`.
+     2. **Model Resource Overrides**: Heavy reporting models can declare higher limits: `@register_model('report', max_prefetch_depth=5, query_timeout_ms=15000, max_page_limit=500)`.
+     3. **Query Caching (`cache_ttl=300`)**: Master lookups (`Country`, `Department`) serve reads directly from Redis/memory in <2ms, bypassing MySQL entirely.
+     4. **Safe Aggregations (`allow_aggregations=True`)**: Unlocks SQL `GROUP BY` and metrics exclusively for models with verified composite indexes.
+
+   ## 11. Canonical 10-Stage Pipeline Sequence (Fail-Fast & Anti-Crash Architecture)
+
+   The pipeline enforces strict fail-fast ordering to protect CPU and memory:
+
+   | Stage | Name | Key Function & Fail-Fast CPU Rationale | Fail Code |
+   |---|---|---|---|
+   | **01** | `PreFlightStage` | Content-Length inspection (`<= 10MB`), $O(1)$ password length check (`<= 128 chars`), Request ID injection. Kills DoS in `<0.01ms` before parsing or hashing. | `HTTP 400` / `413` |
+   | **02** | `IngressParseStage` | Safe JSON parsing (depth $\le 10$), multipart boundary check (no S3 upload yet), canonical action/model resolution. | `HTTP 422` |
+   | **03** | `AuthContextStage` | **Strict Tenant Binding**: Authenticated tokens bind tenant **strictly from the token `tid` claim** (headers cannot override). Anonymous requests resolve via subdomain/header. Bearer JWT/Session auth. Binds cached `GeneralSettings`. | `HTTP 400` / `401` |
+   | **04** | `RateLimitStage` | Evaluates Redis rate limits per User / IP / Tenant: Anon (60/min), User (600/min), Telemetry (600/min). Idempotency pre-check. Fails in `<0.1ms`. | `HTTP 429` |
+   | **05** | `AuthorizationStage` | Module entitlement check (`enabled_modules`), `PUBLIC_READ_MODELS` / `PUBLIC_CREATE_MODELS` check, ABAC policy evaluation, `IMMUTABLE_MODELS` / `GLOBAL_MODELS` write blocks. **Fails fast before any upload or DB connection!** | `HTTP 401` / `403` / `405` |
+   | **06** | `ValidationStage` | Pydantic schema validation, field policy projection (strips forbidden fields from payload, filters, order, and `groupBy`/`metrics`). **Post-Auth File Upload**: Streams to S3 only after auth passes! | `HTTP 400` / `422` |
+   | **07** | `CompilationStage` | AST parsing, joins up to max depth ($\le 3$), parameterized SQL compilation. Session timeout enforced: `SET SESSION max_execution_time=5000; innodb_lock_wait_timeout=5`. | `HTTP 400` / `422` |
+   | **08** | `ExecutionStage` | Cache check (`cache_ttl`), **Service `before_*` Hooks (Fail-Closed: aborts transaction on error)**, atomic DB transaction, **Service `after_*` Hooks (Fail-Safe: runs on `transaction.on_commit`)**. | `HTTP 400` / `500` / `504` |
+   | **09** | `SerializationStage` | OOM-safe streaming (`QuerySet.iterator(chunk_size=1000)`), CSV formula injection prefix (`=+-@` prefixed with `'`), signed download links, Tamil Unicode (`ensure_ascii=False`). | `HTTP 500` |
+   | **10** | `FinalizationStage` | Caches idempotency envelope in Redis, returns JSON response to client immediately (**`<5ms`**), dispatches non-blocking sanitized audit log to async worker pool. | Delivered |
+
+   ## 12. Python Django Implementation (`backend_django`) & Git-Pip Architecture
+
+   The Python implementation runs in parallel with the Node.js backend:
+   - **Kernel Distribution**: `django-populate-core` is installed cleanly via pip from GitHub (`pip install git+ssh://git@github.com/Axinix-Technology/Axinix-Core.git`). Zero local folder dependencies or `POPULATE_CORE_PATH` environment overrides.
+   - **Modular Product Apps**: Directly reflecting the commercial packaging defined in `tenantRegistry.js`:
+     - `users/` (Core: `Role`, `Department`, `Designation`, `Company`, `Client`, `ProjectType`, `User`)
+     - `tasks/` (Product: `Task`, `TaskType`, `Sprint`, `Todo`, `TaskService`)
+     - `tickets/` (Product: `Ticket`, `TicketComment`, `TicketAttachment`, `TicketService`)
+     - `attendance/` (Product: `Attendance`, `Shift`, `AttendancePolicy`, `Holiday`, `AttendanceService`)
+   - **Dual Routing Compatibility**: Routes both `/api/populate/` and `/populate/` directly into `populate_core.urls`, allowing zero frontend API code changes.
 
 

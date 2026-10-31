@@ -12,26 +12,31 @@ AttendancePolicy → Shift → GeneralSettings → REJECT
 ```
 
 ## Backend Models
-| Model | File | Key Fields | Notes |
-|---|---|---|---|
-| `Attendance` | `Attendance.js` | `employee`, `date`, `checkIn`, `checkOut`, `punches[]`, `workHours`, `lateMinutes`, `earlyExitMinutes`, `status`, `snapshot` | Stores frozen `snapshot` capturing exact policy ID, version, shift times, and calculated results. |
-| `AttendancePolicy` | `AttendancePolicy.js` | `version`, `status` (Draft/Active/Archived), `effectiveFrom`, `effectiveTo`, `shiftConfig`, `attendanceRules`, `permissionRules`, `lateEscalationRules`, `holidayWorkRules`, `overtimeRules`, `fineAndLopRules` | Immutable versioning: modifying an active policy archives the old document and generates a new version increment. |
-| `Shift` | `Shift.js` | `name`, `startTime`, `endTime`, `workingHours`, `breakDuration`, `weeklyOff[]`, `alternateWeeklyOff`, `overtimeThreshold` | Governs scheduled work windows and shift rules. |
-| `ShiftAssignment` | `Shift.js` | `employeeId`, `shiftId`, `startDate`, `endDate`, `isActive` | Date-ranged employee shift allocation. |
-| `DailyActivity` | `DailyActivity.js` | `status`, `metaStatus` | Activity and timesheet entries. |
-| `Leave` | `Leave.js` | `status`, `metaStatus`, `startDate`, `endDate`, `leaveType` | Approved leaves consumed by payroll calculation. |
-| `Regularization` | `Regularization.js` | `status`, `metaStatus`, `attendanceId`, `reason` | Clock-in/out regularization workflow. |
+| Model | Node.js File | Django Model (`backend_django/attendance/models.py`) | MySQL Table | Key Fields | Notes |
+|---|---|---|---|---|---|
+| `Attendance` | `Attendance.js` | `Attendance` | `attendances` | `employee`, `date`, `check_in`, `check_out`, `work_hours`, `overtime_hours`, `status` | Daily tracking; synced automatically on approved leaves/WFH. |
+| `AttendancePolicy` | `AttendancePolicy.js` | `AttendancePolicy` | `attendance_policies` | `name`, `grace_period_mins`, `half_day_threshold_hours`, `full_day_threshold_hours` | Threshold rules. |
+| `Shift` | `Shift.js` | `Shift` | `shifts` | `name`, `start_time`, `end_time`, `grace_period_mins`, `is_active` | Work windows and scheduled hours. |
+| `ShiftAssignment` | `Shift.js` | `ShiftAssignment` | `shift_assignments` | `employeeId`, `shiftId`, `start_date`, `end_date`, `is_active` | Date-ranged employee shift allocation. |
+| `LeaveType` | `LeaveTypes.js` | `LeaveType` | `leave_types` | `name`, `max_days_per_month`, `max_days_per_year`, `carry_forward`, `requires_approval` | Master leave categories. |
+| `LeavePolicy` | `LeavePolicy.js` | `LeavePolicy` | `leave_policies` | `name`, `leaves_config`, `applicable_roles`, `applicable_departments`, `effective_from` | Policy allocations. |
+| `Leave` | `Leave.js` | `Leave` | `leaves` | `employeeId`, `leaveTypeId`, `startDate`, `endDate`, `totalDays`, `status`, `approvals` | Leave requests; automatic date calculation & ledger debit on approval. |
+| `LeaveTransaction` | `LeaveTransaction.js` | `LeaveTransaction` | `leave_transactions` | `employeeId`, `leaveTypeId`, `type`, `quantity`, `sourceId`, `expiryDate` | Immutable credit/debit audit ledger. |
+| `Regularization` | `Regularization.js` | `Regularization` | `regularizations` | `employeeId`, `attendanceId`, `requestedCheckIn`, `requestedCheckOut`, `status` | Clock correction workflow; updates `Attendance` upon approval. |
+| `WFHRequest` | `WFHRequest.js` | `WFHRequest` | `wfh_requests` | `employeeId`, `startDate`, `endDate`, `status`, `reason` | Work-from-home requests; syncs `Attendance.status` to WFH. |
+| `CompOffRequest` | `CompOffRequest.js` | `CompOffRequest` | `comp_off_requests` | `employeeId`, `workedDate`, `hoursWorked`, `status`, `expiryDate` | Compensatory off claims; issues 90-day credit transaction. |
 
-## Calculation Pipeline Handlers (`Backend/src/services/business/attendance/`)
-| Handler | File | Responsibility | Business Rule Authority |
-|---|---|---|---|
-| `resolvePolicy` | `resolvePolicy.js` | Resolves effective `AttendancePolicy` and `Shift` | `Employee.professionalInfo.policyAssignments` → `Department.attendancePolicy` → Active Policy. Fails if missing. |
-| `status` | `status.js` | Full/half/absent and punctuality evaluation | `AttendancePolicy.attendanceRules` (`fullDayMinHours`, `halfDayMinHours`, `absentMinHours`, grace minutes). |
-| `overtime` | `time/overtime.js` | Computes eligible overtime duration | `AttendancePolicy.overtimeRules` → `Shift.overtimeThreshold`. |
-| `workHours` | `time/workHours.js` | Total net worked duration & break deduction | `AttendancePolicy.attendanceRules.breakDeductionMinHours` + `Shift.breakDuration`. |
-| `fine` | `fine.js` | Computes late fines and LOP day factors | `AttendancePolicy.fineAndLopRules` (`absentLopDays`, `halfDayLopDays`). |
-| `permission` | `permission.js` | Offsets lateness with approved permissions | `AttendancePolicy.permissionRules`. |
-| `snapshot` | `snapshot.js` | Builds frozen immutable snapshot on Attendance doc | Pure snapshot builder recording policy version and calculation timestamp. |
+## Axinix-Core Service Hooks (`backend_django/attendance/services.py`)
+- **`LeaveService`**:
+  - `before_create`: Validates date bounds, checks for overlapping active leaves for the same employee, automatically computes `totalDays`.
+  - `after_update`: When status changes to `Approved`, records `LEAVE_DEBIT` in `LeaveTransaction` and marks `Attendance` as `On Leave` across date span.
+- **`RegularizationService`**:
+  - `before_create`: Rejects duplicate pending requests for the same attendance record.
+  - `after_update`: When approved, atomically updates `Attendance.check_in` and `Attendance.check_out`.
+- **`CompOffService`**:
+  - `after_update`: When approved, credits `LeaveTransaction` with a 90-day expiry.
+- **`WFHService`**:
+  - `after_update`: When approved, updates `Attendance.status` to `Work From Home`.
 
 ## Dynamic API Usage
 | File | Method | URL | Target Model |

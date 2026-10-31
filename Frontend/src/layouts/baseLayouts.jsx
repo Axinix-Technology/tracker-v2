@@ -11,6 +11,7 @@ import AcademyLayout from "../pages/academy/index.jsx";
 import { useState, useEffect, useCallback, useMemo, memo, useRef } from "react";
 import ModernLoader from "../components/Common/ModernLoader.jsx";
 import { ErrorBoundary } from "../components/ErrorBoundary.jsx";
+import SeoHead from "../components/SeoHead.jsx";
 import JarvisWidget from "../components/Jarvis/JarvisWidget.jsx";
 import ReleaseNotesModal from "../components/Common/ReleaseNotesModal.jsx";
 
@@ -92,6 +93,11 @@ const BaseLayout = () => {
 
   const element = useRoutes(tenantRoutes);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const derivedTitle = useMemo(() => {
+    const segments = location.pathname.split('/').filter(Boolean);
+    const raw = segments[segments.length - 1] || 'Dashboard';
+    return raw.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  }, [location.pathname]);
 
   // Stable callbacks — declared at the top before any early returns to respect the Rules of Hooks
   const handleCloseSidebar = useCallback(() => setSidebarOpen(false), []);
@@ -162,6 +168,7 @@ const BaseLayout = () => {
 
   return (
     <div className="lmx-app-shell">
+      <SeoHead title={derivedTitle} />
       {/* NavigationLoader manages its own location subscription — BaseLayout stays stable */}
       <NavigationLoader />
 

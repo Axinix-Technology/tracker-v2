@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import useGenericAPI from "../../../../components/useGenericAPI";
-import Activity from "../activity";
+import Activity from "../../../../components/Attendance/DailyActivityView";
 import FormPageLayout from "../../../../components/Forms/FormPageLayout";
 
 const ActivityDetailPage = () => {

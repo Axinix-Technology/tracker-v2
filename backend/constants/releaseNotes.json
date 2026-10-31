@@ -1,0 +1,18 @@
+[
+  {
+    "version": "4.1.0",
+    "releaseDate": "2026-10-31",
+    "title": "Release v4.1.0",
+    "tagline": "Platform enhancements and continuous improvements.",
+    "isLatest": true,
+    "type": "Feature & Maintenance Release",
+    "categories": {
+      "features": [],
+      "improvements": [
+        "Release increment to v4.1.0"
+      ],
+      "security": [],
+      "fixes": []
+    }
+  }
+]

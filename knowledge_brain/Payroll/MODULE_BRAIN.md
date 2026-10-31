@@ -1,64 +1,43 @@
 # Payroll Module Brain
 
 ## Overview
-This module governs monthly compensation calculation, versioned salary structures, bulk payroll processing runs, statutory compliance derivations, accounting exports, and the Authoritative Monthly Payroll Submission Register.
+This module governs monthly compensation calculation, versioned salary structures, bulk payroll processing runs, statutory compliance derivations, accounting exports, expense reimbursements, and the Authoritative Monthly Payroll Submission Register.
 
 ## Core Architectural Invariants
 1. **Zero Manufactured Defaults**: The payroll engine never invents salary structures or statutory rates. Precedence is strictly:
    ```
    SalaryStructure → GeneralSettings.payroll → REJECT
    ```
-2. **Configuration Readiness Gate**: In `payrollruns.js`, any employee lacking a mandatory `SalaryStructure` triggers a `CONFIGURATION_ERROR` note and **blocks final approval** until resolved. Missing employees are never silently omitted.
-3. **Accountant Report Projection**: Reports consume frozen `Attendance.snapshot` records and authoritative `Payroll` documents. Reports never recalculate attendance or payroll independently.
+2. **Configuration Readiness Gate**: In `payroll_run`, any employee lacking a mandatory `SalaryStructure` triggers a `CONFIGURATION_ERROR` note and **blocks final approval** until resolved. Missing employees are never silently omitted.
+3. **Accountant Report Projection**: Reports consume frozen `Attendance` snapshots and authoritative `Payroll` documents. Reports never recalculate attendance or payroll independently.
+4. **State Machine & Freezing**:
+   - `Payroll`: `Draft → Processing → Processed → Approved → Paid` (Financial figures frozen permanently after `Approved`).
+   - `PayrollRun`: `Draft → Processing → Computed → Approved → Paid`. Cannot transition to `Approved` if configuration errors exist.
 
 ---
 
-## Models
+## Django Backend Models (`backend_django/payroll/models.py`)
 
-| Model | Collection | Key Fields |
-|---|---|---|
-| `Payroll` | `payrolls` | `employeeId`, `month`, `year`, `salaryStructureId`, `payrollRunId`, `earnedBreakdown` (Map), `deductionBreakdown` (Map), `grossSalary`, `netSalary`, `workingDays`, `presentDays`, `lopDays`, `overtimeHours`, `overtimePay`, `pfEmployerContribution`, `esiEmployerContribution`, `status` (Draft/Processing/Processed/Approved/Paid), `frozenAt` |
-| `SalaryStructure` | `salary_structures` | `employeeId`, `version`, `effectiveFrom`, `effectiveTo`, `ctc`, `earnings[code, name, type, amount, isProratable]`, `deductions[code, name, type, amount, ceiling]`, `pfEmployeePercent`, `pfCeiling`, `esiApplicable`, `overtimeRate` |
-| `PayrollRun` | `payroll_runs` | `month`, `year`, `status` (Draft/Processing/Computed/Approved/Paid), `employeeIds[]`, `payrollIds[]`, `totalEmployees`, `processedCount`, `failedCount`, `totalGross`, `totalNet`, `payrollAuditEvents[]`, `notes` |
-| `Holiday` | `holidays` | `date` (unique), `name`, `type` (national/regional/optional/company), `year` |
-
----
-
-## Services & Engines
-
-| Service | File | Purpose |
-|---|---|---|
-| `payrollEngine` | `Backend/src/services/business/payrollEngine.js` | Pure payroll computation engine: resolves structure, working days, attendance summaries, and statutory deductions. |
-| `payrollSubmissionReport` | `Backend/src/services/business/payrollSubmissionReport.js` | Authoritative Monthly Payroll Submission Register: batched queries, dynamic 1..31 daily attendance grid from frozen snapshots, dynamic earnings/deductions, and column-level ABAC security. |
-| `payrolls` | `Backend/src/services/payrolls.js` | Lifecycle CRUD hooks for individual Payroll records. |
-| `payrollruns` | `Backend/src/services/payrollruns.js` | Bulk payroll lifecycle, Configuration Readiness Gate, and state machine enforcement. |
-| `reportService` | `Backend/src/services/business/reportService.js` | Aggregation service for bank advice, PF ECR, and ESI monthly returns. |
+| Model | Target DB Table | Table Type | Aliases | Key Fields | Notes |
+|---|---|---|---|---|---|
+| `SalaryStructure` | `salary_structures` | `master` | `salary_structures`, `salarystructure` | `employee`, `version`, `effective_from`, `effective_to`, `ctc`, `earnings`, `deductions`, `pf_employee_percent`, `pf_ceiling`, `esi_applicable`, `overtime_rate` | Versioned salary structures with automated closure of prior open windows upon new version creation |
+| `PayrollRun` | `payroll_runs` | `transaction` | `payroll_runs`, `payrollrun` | `month`, `year`, `run_status`, `employee_ids`, `payroll_ids`, `total_employees`, `processed_count`, `total_gross`, `total_net`, `audit_events` | Batch monthly payroll processing run with state machine enforcement |
+| `Payroll` | `payrolls` | `transaction` | `payrolls` | `employee`, `department`, `month`, `year`, `salary_structure`, `payroll_run`, `working_days`, `present_days`, `lop_days`, `overtime_pay`, `earned_breakdown`, `deduction_breakdown`, `gross_salary`, `net_salary`, `payroll_status` | Authoritative individual monthly payslip ledger with frozen financial breakdowns post-approval |
+| `Expense` | `expenses` | `transaction` | `expenses` | `employee`, `client`, `project_type`, `is_billable`, `date`, `expense_period`, `expenses`, `day_total`, `expense_status`, `reimbursed_at` | Employee reimbursement claims with GST tracking, itemized receipt breakdown, and client billable flags |
 
 ---
 
-## Endpoints & Export Routes
+## Django Domain Services (`backend_django/payroll/services.py`)
 
-| Method | Route | Output | Security / Role |
+| Service Class | Target Model | Registered Key | Key Business Logic & Hooks |
 |---|---|---|---|
-| `GET` | `/api/export/payroll-submission` | Authoritative Excel XLSX download (`exceljs`) | Private (Finance / HR / Admin) |
-| `GET` | `/api/export/payroll-submission/json` | JSON dataset with daily grid & audit trail | Private (Column-gated by role) |
-| `POST` | `/api/populate/create/payroll_runs` | Initiates bulk calculation run | HR / Finance / Admin |
-| `PUT` | `/api/populate/update/payroll_runs/:id` | State transition: `Approved` or `Paid` | HR Admin / Finance (Blocked if configuration errors exist) |
+| `SalaryStructureService` | `SalaryStructure` | `salary_structure` | Auto-increments version; automatically closes previous open version; blocks mutation of historical version records; scopes reads to employee |
+| `PayrollRunService` | `PayrollRun` | `payroll_run` | Blocks duplicate runs for already Approved/Paid month-years; enforces valid state transitions; restricts execution to Superadmin / Finance HR |
+| `PayrollService` | `Payroll` | `payroll` | Row-level employee scoping; blocks modification of frozen financial fields after `Approved`; enforces unique employee-month-year constraint |
+| `ExpenseService` | `Expense` | `expense` | Auto-derives `expense_period` (`YYYY-MM`) and sums `day_total`; manages approval/reimbursement state transitions; scopes reads to owning employee |
 
 ---
 
-## Frontend Components
-
-| File | Purpose | UX & Design Standard |
-|---|---|---|
-| `Frontend/src/pages/reports/payroll-submission.jsx` | Monthly Payroll Submission Register | High-density ledger table with sticky frozen columns (Emp ID, Name, Dept), monospace numeric alignment, and interactive **Side Drill-Down Drawer** (Punches, Math, Policy Snapshots, Audit Hashes). |
-| `Frontend/src/pages/hrms/monthly-payroll.jsx` | Payroll Report Page route | Directly renders `MonthlyPayrollSubmissionReport`. |
-| `Frontend/src/pages/Payroll/payroll_runsTab.jsx` | HR Payroll Runs manager | Run list, creation modal, approval actions, and Configuration Error display. |
-| `Frontend/src/pages/Payroll/salary_structuresTab.jsx` | Salary Structures manager | Multi-component salary creator with versioning and component codes (`BASIC`, `HRA`, `PF_EE`). |
-| `Frontend/src/pages/Payroll/MyPayslipsTab.jsx` | Employee self-service | Payslip viewer for authenticated employees. |
-
----
-
-## State Machine & Freezing
-- **Payroll**: `Draft → Processing → Processed → Approved → Paid` (Fields frozen after `Approved`).
-- **PayrollRun**: `Draft → Processing → Computed → Approved → Paid`. Cannot transition to `Approved` if `notes` contains unresolved `CONFIGURATION_ERROR` flags.
+## Legacy Node.js Reference
+- Legacy Models: `Backend/src/models/SalaryStructure.js`, `Backend/src/models/PayrollRun.js`, `Backend/src/models/Payroll.js`, `Backend/src/models/Expense.js`.
+- Legacy Business Engine: `Backend/src/services/business/payrollEngine.js`, `Backend/src/services/business/payrollSubmissionReport.js`.

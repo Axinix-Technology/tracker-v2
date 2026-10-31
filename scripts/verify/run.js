@@ -6,13 +6,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const VERIFY_SCRIPTS = [
-  'check-raw-routes.js',
-  'check-service-hooks.js',
-  'check-status-transitions.js',
-  'check-indexes.js',
-  'check-tx-boundaries.js',
-  'check-abac-fields.js',
-  'check-report-engine.js'
+  'check-api-contract.js',
+  'check-models-status-field.js'
 ];
 
 const args = process.argv.slice(2);

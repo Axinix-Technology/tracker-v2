@@ -1,0 +1,15 @@
+{
+  "name": "workhub-tracker-v2-backend",
+  "version": "4.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "python manage.py runserver 0.0.0.0:8000",
+    "test": "python manage.py test tests_api.test_postman_api_contract",
+    "test:postman": "python simulate_postman_api_test.py",
+    "migrate": "python manage.py migrate",
+    "makemigrations": "python manage.py makemigrations",
+    "check": "python manage.py check",
+    "verify:version": "node ../scripts/verify-deploy-version.mjs --target=backend"
+  }
+}

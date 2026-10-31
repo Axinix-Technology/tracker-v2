@@ -1,9 +1,17 @@
 # HR Module Brain
 
 ## Overview
-This module contains models and services for HR management, employee lifecycle tracking, onboarding automation, and salary revision management.
+This module contains models and services for HR management, employee lifecycle tracking, onboarding automation, employee document compliance, and salary revision management.
 
-## Backend Models
+## Django Backend Models (`backend_django/hr/models.py`)
+| Model | Target DB Table | Table Type | Aliases | Key Fields / Ref | Notes |
+|---|---|---|---|---|---|
+| `EmployeeDocument` | `employee_documents` | `transaction` | `employee_documents`, `employeedocument` | `employee`, `document_type`, `file_url`, `status`, `approved_by` | Tracks employee verification documents (PAN, Aadhaar, Passport, etc.) with approval workflow |
+| `EmployeeLifecycleHistory` | `employee_life_cycle_histories` | `transaction` | `employee_lifecycle_histories`, `employeelifecyclehistory` | `employee`, `change_type`, `effective_date`, `previous_value`, `new_value`, `changed_by` | Immutable audit ledger tracking career progression, promotions, and transfers |
+| `HRPolicy` | `hr_policies` | `master` | `hr_policies`, `hrpolicy` | `title`, `category`, `content`, `version`, `status`, `departments`, `roles`, `acknowledgments` | Centralized corporate governance policies with role/department scoping and employee acknowledgments |
+| `UserOverride` | `user_overrides` | `master` | `user_overrides`, `useroverride` | `user`, `overrides`, `status` | Granular per-user UI visibility capability overrides (allow/deny) for frontends |
+
+## Legacy Node.js Backend Models
 | Model | File | Key Fields / Ref | Notes |
 |---|---|---|---|
 | Employee | Employee.js | `salaryStructure` (Ref: salary_structures), `isDeleted` | Enforces optimistic concurrency (`__v`), soft-delete, and SalaryStructure ref |

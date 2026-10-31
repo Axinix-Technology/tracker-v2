@@ -39,7 +39,7 @@ const SHIFT_COLORS = [
 /* ════════════════════════════════
    MAIN COMPONENT
    ════════════════════════════════ */
-import ShiftEditorModal from "./ShiftEditorModal.jsx";
+import ShiftEditorModal from "@components/Attendance/ShiftEditorModal.jsx";
 
 const ShiftRoster = () => {
   const { user } = useAuth();

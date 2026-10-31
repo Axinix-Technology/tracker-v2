@@ -1,0 +1,29 @@
+# WorkHub ERP & Platform Intelligence
+
+> Enterprise Multi-Tenant Resource Planning, HRMS, Agile Task Tracking, CRM & Client Invoicing Platform powered by Axinix Populate Engine.
+
+## Overview
+WorkHub is an enterprise-grade ERP designed for unified organizational operations. It consolidates human resources, project tracking, ticket dispatching, CRM lead management, double-entry financial billing, and hardware asset lifecycle management into an ABAC-secured, policy-driven architecture.
+
+## Platform Capabilities & Modules
+- **Identity & Access Management (Users & Roles)**: Multi-tenant RBAC/ABAC dynamic policy engine, PBKDF2 password encryption, privilege escalation guards, and department/designation hierarchies.
+- **Human Resources (HRMS & Attendance)**: Employee document vault, immutable career progression history, biometric punch regularization, short-duration permissions, comp-off credits, and holiday policies.
+- **Agile Task & Sprint Management (Tasks)**: Scrum/Kanban boards, sprint schedules, time tracker sessions, stages, priority queues, and daily work activity logs.
+- **Support & Ticketing (Tickets)**: Customer incident management, SLA tracking, participant dispatches, and bi-directional status synchronization.
+- **Client Accounting & Billing (Billing)**: Quotations, order acknowledgements, tax invoices, customer collection receipts, double-entry client ledgers, and accounting period locks.
+- **Customer Relationship Management (CRM)**: Sales pipeline, contact interaction logs, deals, probability forecasting, and meeting scheduling.
+- **Payroll & Compensation (Payroll)**: Effective-date salary structures, batch payroll computation runs, immutable payslip ledger, and expense reimbursements.
+- **Asset Management (Assets)**: Hardware inventory, vendor purchase orders, assignment lifecycles, and repair logs.
+
+## Public Architecture & Developer Resources
+- **/academy**: Interactive platform architectural academy explaining the 10-stage Populate execution pipeline, ABAC policy resolution, and domain services.
+- **/documentations**: Full platform documentation, system specifications, and workflow guides.
+- **/populateEngineDocumentation**: In-depth developer guide on the Populate Engine API contract (`/api/populate/:action/:model`).
+
+## Canonical API Architecture
+All entity interactions follow the unified Populate Engine API pipeline:
+- `POST /api/populate/read/:model` (read with AST filter, sorting, pagination, and projection)
+- `POST /api/populate/create/:model` (validated transactional creation with lifecycle hooks)
+- `POST /api/populate/update/:model/:id` (atomic state updates with domain service validation)
+- `POST /api/populate/delete/:model/:id` (soft-delete with lifecycle status tracking)
+

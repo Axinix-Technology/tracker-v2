@@ -9,6 +9,10 @@ import App from './App'
 import { ThemeProvider } from './context/themeProvider'
 import { NotificationProvider } from './context/notificationProvider'
 import { Analytics } from '@vercel/analytics/react'
+import { initLogger } from './utils/logger'
+
+// Initialize production console protection & environment hardening
+initLogger();
 
 function Root() {
   // Ensure default tenant slug is present in localStorage

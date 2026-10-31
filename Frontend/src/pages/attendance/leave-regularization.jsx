@@ -40,7 +40,7 @@ const getLocalDateString = (d = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
-const LeaveAndRegularization = ({ onClose, onSuccess, onFailed, defaultType = "" }) => {
+const LeaveAndRegularization = ({ onClose, onSuccess, onFailed, defaultType = "" } = {}) => {
   const [searchParams] = useSearchParams();
   const typeParam = searchParams.get("type");
   const [formType, setFormType] = useState(defaultType || typeParam || "leave");

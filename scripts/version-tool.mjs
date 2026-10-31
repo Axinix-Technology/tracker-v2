@@ -19,10 +19,10 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 
 const VERSION_FILE = path.join(ROOT_DIR, 'version.json');
 const ROOT_PKG = path.join(ROOT_DIR, 'package.json');
-const BACKEND_PKG = path.join(ROOT_DIR, 'Backend', 'package.json');
+const BACKEND_PKG = path.join(ROOT_DIR, 'backend', 'package.json');
 const FRONTEND_PKG = path.join(ROOT_DIR, 'Frontend', 'package.json');
 const FRONTEND_PUBLIC_VERSION = path.join(ROOT_DIR, 'Frontend', 'public', 'version.json');
-const BACKEND_RELEASE_NOTES = path.join(ROOT_DIR, 'Backend', 'src', 'constants', 'releaseNotes.json');
+const BACKEND_RELEASE_NOTES = path.join(ROOT_DIR, 'backend', 'constants', 'releaseNotes.json');
 const MOBILE_PUBSPEC = path.join(ROOT_DIR, 'tracker_mobile', 'pubspec.yaml');
 
 // ─── Semantic Version Helpers ──────────────────────────────────────────────────
@@ -175,8 +175,12 @@ export function syncAllPackages(targetVersion) {
     });
   }
 
+  const notesDir = path.dirname(BACKEND_RELEASE_NOTES);
+  if (!fs.existsSync(notesDir)) {
+    fs.mkdirSync(notesDir, { recursive: true });
+  }
   fs.writeFileSync(BACKEND_RELEASE_NOTES, JSON.stringify(releaseNotes, null, 2) + '\n', 'utf8');
-  results.push(`Backend/src/constants/releaseNotes.json -> v${targetVersion}`);
+  results.push(`backend/constants/releaseNotes.json -> v${targetVersion}`);
 
   return results;
 }

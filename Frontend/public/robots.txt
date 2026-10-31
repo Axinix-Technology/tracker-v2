@@ -1,0 +1,113 @@
+# WorkHub ERP & Platform Architecture — Robots Directives
+# Dynamic multi-tenant ERP platform crawler configuration
+
+User-agent: Googlebot
+Allow: /
+Allow: /login
+Allow: /documentations
+Allow: /populateEngineDocumentation
+Allow: /academy
+Allow: /api/auth/login
+Allow: /api/populate/read/company
+Allow: /api/populate/read/general_setting
+Disallow: /settings/
+Disallow: /payroll/
+Disallow: /attendance/
+Disallow: /tasks/
+Disallow: /tickets/
+Disallow: /crm/
+Disallow: /assets/
+Disallow: /feed/
+Disallow: /profile/
+Disallow: /platformAdmin/
+Disallow: /api/
+
+User-agent: Bingbot
+Crawl-delay: 2
+Allow: /
+Allow: /login
+Allow: /documentations
+Allow: /populateEngineDocumentation
+Allow: /academy
+Disallow: /settings/
+Disallow: /payroll/
+Disallow: /admin/
+Disallow: /api/
+
+# AI Discovery & LLM Search Agents
+User-agent: GPTBot
+Allow: /
+Allow: /documentations
+Allow: /populateEngineDocumentation
+Allow: /academy
+Allow: /llms.txt
+Disallow: /settings/
+Disallow: /payroll/
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Allow: /
+Allow: /documentations
+Allow: /populateEngineDocumentation
+Allow: /academy
+Allow: /llms.txt
+
+User-agent: OAI-SearchBot
+Allow: /
+Allow: /documentations
+Allow: /populateEngineDocumentation
+Allow: /academy
+Allow: /llms.txt
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /documentations
+Allow: /populateEngineDocumentation
+Allow: /academy
+Allow: /llms.txt
+
+User-agent: anthropic-ai
+Allow: /
+Allow: /documentations
+Allow: /populateEngineDocumentation
+Allow: /academy
+Allow: /llms.txt
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /documentations
+Allow: /populateEngineDocumentation
+Allow: /academy
+Allow: /llms.txt
+
+User-agent: Applebot
+Allow: /
+Allow: /documentations
+Allow: /populateEngineDocumentation
+Allow: /academy
+
+User-agent: Applebot-Extended
+Allow: /
+Allow: /documentations
+Allow: /populateEngineDocumentation
+Allow: /academy
+
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /documentations
+Allow: /populateEngineDocumentation
+Allow: /academy
+Disallow: /settings/
+Disallow: /payroll/
+Disallow: /attendance/
+Disallow: /tasks/
+Disallow: /tickets/
+Disallow: /crm/
+Disallow: /assets/
+Disallow: /feed/
+Disallow: /platformAdmin/
+Disallow: /api/
+
+Sitemap: /sitemap.xml
+

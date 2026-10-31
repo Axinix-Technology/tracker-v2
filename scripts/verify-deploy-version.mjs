@@ -100,7 +100,7 @@ function getLocalVersion(target) {
   }
 
   // 2. Try target package.json
-  const targetDir = target === 'frontend' ? 'Frontend' : 'Backend';
+  const targetDir = target === 'frontend' ? 'Frontend' : (fs.existsSync(path.join(ROOT_DIR, 'backend')) ? 'backend' : 'Backend');
   const pkgPath = path.join(ROOT_DIR, targetDir, 'package.json');
   if (fs.existsSync(pkgPath)) {
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));

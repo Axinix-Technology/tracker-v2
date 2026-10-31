@@ -1,74 +1,123 @@
-# Tickets Module Brain
+# Tickets & Client Support Module — Module Brain
 
 ## Overview
-The Tickets module manages support ticketing workflows, allowing client-facing agents (via the mobile app or web endpoints) and internal employees to file issues, assign developers, exchange public and private comments, attach documents, track status history, and sync issues with development tasks. It contains 8 models and 4 services.
+The **Tickets & Client Support Module** manages customer issue logging, public and internal support discussions, attachment management, watcher/participant subscriptions, and bi-directional status synchronization with development `Task`s. It runs on Django and MySQL (`workhub_db`), executed seamlessly through the declarative `django-populate-core` pipeline.
 
 ---
 
-## 🏗️ Architecture & Component Relations
-The module relies on the central dynamic `populateHelper` for all CRUD actions and triggers lifecycle events such as auto-participants generation, auto-comment read mapping, and developer task status synchronization.
+## 🗄️ Backend Models (`backend_django/tickets/models.py`)
 
-### Sequence Flow: Task Status Sync to Ticket status
-```mermaid
-sequenceDiagram
-  autonumber
-  Developer->>Task Service: Update task status to "Completed"
-  Task Service->>ticketTaskSync: Trigger syncTaskStatusToTicket(taskId, "Completed", userId)
-  ticketTaskSync->>Mongoose: Update Ticket status to "Resolved" & set resolvedAt
-  Mongoose-->>Developer: Ticket auto-updated to Resolved
-```
-
----
-
-## 🗄️ Backend Models
-
-| Model | File | Description | Key Fields | Relationships |
+| Model | Table | Description | Key Fields | Relationships |
 | :--- | :--- | :--- | :--- | :--- |
-| **Ticket** | `Ticket.js` | Main support ticket register. | `ticketId`, `priority`, `status`, `metaStatus`, `linkedTaskId` | Ref: `project_types`, `products`, `task_types`, `clients`, `employees`, `departments`, `tasks`, `milestones` |
-| **TicketComment** | `TicketComment.js` | Comments and internal developer notes attached to tickets. | `ticketId`, `commentedBy`, `commenterModel`, `isPublic`, `message` | Ref: `tickets`, `employees`, `agents`, `ticket_attachments` |
-| **TicketCommentRead** | `TicketCommentRead.js` | Tracking logs of comments read by watchers. | `commentId`, `userId`, `userModel`, `readAt` | Ref: `ticket_comments`, `employees`, `agents` |
-| **TicketAttachment** | `TicketAttachment.js` | Multer-uploaded file attachments for tickets. | `filename`, `originalName`, `mimetype`, `size`, `uploadedBy` | Ref: `tickets`, `employees`, `agents` |
-| **TicketActivityLog** | `TicketActivityLog.js` | History of modifications and admin actions on the ticket. | `ticketId`, `action`, `performedBy`, `details` | Ref: `tickets`, `employees`, `agents` |
-| **TicketAssignment** | `TicketAssignment.js` | Assignment logs of developers allocated to the ticket. | `ticketId`, `assignedTo`, `assignedBy`, `assignedByModel` | Ref: `tickets`, `employees`, `agents` |
-| **TicketParticipant** | `TicketParticipant.js` | Watchers, assignees, and creators subscribed to notifications. | `ticketId`, `userId`, `userModel`, `role` | Ref: `tickets`, `employees`, `agents` |
-| **TicketStatusHistory** | `TicketStatusHistory.js` | Time logs of status transitions. | `ticketId`, `fromStatus`, `toStatus`, `changedBy` | Ref: `tickets`, `employees`, `agents` |
+| **Ticket** | `tickets` | Main customer support issue. | `ticket_id` (`TCK-1`), `title`, `priority`, `ticket_status`, `meta_status`, `resolved_at`, `closed_at`, `status` | Ref: `users.Client`, `users.ProjectType`, `User` (created_by, assignee), `tasks.Task` (linked_task) |
+| **TicketComment** | `ticket_comments` | Public discussion & internal developer notes. | `content`, `is_internal`, `status`, `created_at` | Ref: `Ticket`, `User` (author) |
+| **TicketAttachment** | `ticket_attachments` | Uploaded screenshots, documents, and logs. | `file_url`, `file_name`, `file_size`, `status` | Ref: `Ticket`, `User` (uploaded_by) |
+| **TicketActivityLog** | `ticket_activity_logs` | Audit trail of all actions and state changes. | `action` (`created`, `assigned`, `status_changed`, `comment_added`), `details` (JSON) | Ref: `Ticket`, `User` (performed_by) |
+| **TicketParticipant** | `ticket_participants` | Watchers, assignees, and creators subscribed to notifications. | `role` (`creator`, `assignee`, `watcher`, `manager`), `status` | Ref: `Ticket`, `User`. Unique per `(ticket, user)` |
+| **TicketStatusHistory** | `ticket_status_history` | Precise elapsed time logs of status transitions. | `from_status`, `to_status`, `duration_seconds`, `status` | Ref: `Ticket`, `User` (changed_by) |
 
 ---
 
-## ⚙️ Backend Services (Business Logic Hooks)
+## ⚙️ Domain Services & Business Logic Hooks (`backend_django/tickets/services.py`)
 
-### 1. `tickets.js`
-- **beforeCreate**:
-  - Resolves default `type` if not provided.
-  - Automatically loads default `status` ("Open") and `metaStatus` ("active") from the `status_configss` seed.
-  - If created by a client Agent, populates `clientId` and maps creator credentials.
-  - Normalizes frontend model mappings (`clientName` ➔ `clientId`, `product` ➔ `productId`, etc.).
-- **afterCreate**:
-  - Automatically adds the creator as a participant with the `creator` role.
-  - Enrolls and records ticket assignees in `ticket_participants` and `ticket_assignments`.
-  - Creates the initial audit log activity records.
+1. **`TicketService` (`@register_service("ticket")`)**:
+   - `before_create`:
+     - Auto-generates sequential ticket keys (`TCK-1`, `TCK-2`, etc.).
+     - Defaults `ticket_status = "Open"`, `priority = "Medium"`, `meta_status = "active"`.
+     - Sets `created_by = context.user`.
+   - `after_create`:
+     - Automatically registers creator as `TicketParticipant(role="creator")`.
+     - Automatically registers assignee as `TicketParticipant(role="assignee")`.
+     - Records initial audit log in `TicketActivityLog(action="created")`.
+     - Records initial status in `TicketStatusHistory(to_status="Open")`.
+     - Side effects via `transaction.on_commit`:
+       - Dispatches push notification to assignee.
+       - Back-links to `Task` if `linked_task` was attached on creation (`task.linkedTicketId = ticket`).
+   - `before_update`:
+     - Stamps `resolved_at = now()` when transitioning to `"Resolved"`.
+     - Stamps `closed_at = now()` when transitioning to `"Closed"`.
+   - `after_update`:
+     - Computes duration in seconds spent in previous status and appends to `TicketStatusHistory`.
+     - Records `TicketActivityLog(action="status_changed")` and `action="assigned"`.
+     - Enrolls new assignee in `TicketParticipant`.
+     - Side effects via `transaction.on_commit`:
+       - Dispatches update notifications to all watchers and participants.
+       - **Bi-Directional Task Sync**: If ticket is `"Resolved"` or `"Closed"`, automatically transitions linked `Task.status` to `"Done"` and sets `progress = 100`.
 
-### 2. `ticket_comments.js`
-- **beforeCreate**:
-  - Maps commenter properties. Client agents are restricted to public comments only (`isPublic = true`).
-  - Enforces client isolation (agents can only comment on tickets belonging to their client company).
-- **afterCreate**:
-  - Automatically registers the commenter as a watcher in `ticket_participants` (if not already present).
-  - Automatically writes a self-read record in `ticket_comment_reads`.
-  - Adjusts ticket status dynamically based on commenter tier:
-    - If a client agent comments ➔ updates status to `Waiting For Admin`.
-    - If an internal employee comments publicly ➔ updates status to `Waiting For Client`.
-    - Registers status transition history and emits a real-time event via `ticketSocketEmitter`.
+2. **`TicketCommentService` (`@register_service("ticket_comment")`)**:
+   - `before_create`:
+     - Validates non-empty content and binds `author = context.user`.
+   - `after_create`:
+     - Registers commenter as `TicketParticipant(role="watcher")`.
+     - Records `TicketActivityLog(action="comment_added")`.
+     - **Dynamic Status Switching**:
+       - When internal staff posts a public comment, automatically transitions parent ticket status to `"Waiting For Customer"`.
+       - When a customer replies, transitions parent ticket status to `"In Progress"`.
+     - Side effects via `transaction.on_commit`:
+       - Notifies participants (respecting `is_internal` visibility for non-staff).
 
-### 3. `ticket_attachments.js`
-- **beforeCreate**: Extracts the Multer metadata and binds the uploader's ObjectId and model (`employees` vs `agents`).
-- **afterCreate**: Updates the parent ticket's `updatedAt` timestamp and writes a log entry to `ticket_activity_logs`.
+3. **`TicketAttachmentService` (`@register_service("ticket_attachment")`)**:
+   - Records `TicketActivityLog(action="attachment_uploaded")`.
 
-### 4. `ticketTaskSync.js`
-- `syncTaskStatusToTicket`: Maps Developer task states back to the customer ticket:
-  - `Backlogs` / `To Do` ➔ `Open`
-  - `In Progress` / `In Review` / `Rejected` ➔ `In Progress`
-  - `Approved` / `Completed` ➔ `Resolved` (marks `resolvedAt`)
-  - `Closed` ➔ `Closed` (marks `closedAt`)
-- `syncTaskAssignmentToTicket`: Propagates developer assignment changes back to the ticket, adding an internal thread log.
-- `getSyncStatus`: Checks link validity and synchronization status between the task and ticket.
+---
+
+## 📡 Dynamic API Usage (Populate Pipeline)
+
+- **Create Support Ticket**:
+  ```http
+  POST /api/populate/create/ticket/
+  Content-Type: application/json
+
+  {
+    "title": "Payment Gateway Webhook Timeout",
+    "description": "Webhook callbacks are taking over 5000ms.",
+    "client": 1,
+    "project_type": 1,
+    "priority": "Urgent"
+  }
+  ```
+- **Post Discussion Comment**:
+  ```http
+  POST /api/populate/create/ticket_comment/
+  Content-Type: application/json
+
+  {
+    "ticket": 1,
+    "content": "Please test on staging.",
+    "is_internal": false
+  }
+  ```
+- **Read Ticket with Deep Population**:
+  ```http
+  POST /api/populate/read/ticket/
+  Content-Type: application/json
+
+  {
+    "filter": { "ticket_status": "In Progress" },
+    "populateFields": {
+      "client": "name",
+      "project_type": "name",
+      "assignee": "username,email",
+      "linked_task": "task_key,title,status"
+    }
+  }
+  ```
+
+---
+
+## 🚀 Database Indexes (MySQL Engine)
+- `tickets`:
+  - `(status, ticket_status, client_id)`
+  - `(status, assignee_id, priority)`
+  - `(status, meta_status, created_at)`
+- `ticket_comments`:
+  - `(status, ticket_id, created_at)`
+- `ticket_activity_logs`:
+  - `(status, ticket_id, created_at)`
+  - `(status, action)`
+- `ticket_participants`:
+  - `(status, ticket_id, role)`
+  - `(status, user_id)`
+  - Unique constraint on `(ticket_id, user_id)`
+- `ticket_status_history`:
+  - `(status, ticket_id, created_at)`

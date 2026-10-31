@@ -39,7 +39,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:8000',
         changeOrigin: true,
       },
       '/socket.io': {
@@ -48,5 +48,42 @@ export default defineConfig({
         changeOrigin: true,
       }
     }
-  }
-})
+  },
+  build: {
+    sourcemap: false,
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            const normalized = id.replace(/\\/g, '/');
+            if (normalized.includes('/react/') || normalized.includes('/react-dom/') || normalized.includes('/scheduler/')) {
+              return 'vendor-react';
+            }
+            if (normalized.includes('/react-router/') || normalized.includes('/react-router-dom/')) {
+              return 'vendor-router';
+            }
+            if (normalized.includes('/lucide-react/')) {
+              return 'vendor-icons';
+            }
+            if (normalized.includes('/axios/') || normalized.includes('/js-cookie/') || normalized.includes('/jwt-decode/')) {
+              return 'vendor-network';
+            }
+            if (normalized.includes('/country-state-city/')) {
+              return 'vendor-geo';
+            }
+            if (normalized.includes('/xlsx/') || normalized.includes('/file-saver/')) {
+              return 'vendor-excel';
+            }
+            if (normalized.includes('/react-quill-new/')) {
+              return 'vendor-editor';
+            }
+            if (normalized.includes('/clsx/') || normalized.includes('/tailwind-merge/') || normalized.includes('/react-hot-toast/')) {
+              return 'vendor-ui';
+            }
+          }
+        },
+      },
+    },
+  },
+});
