@@ -186,11 +186,12 @@
   - `vendor-router`: `react-router`, `react-router-dom` (37 kB, gzip: 13 kB).
   - `vendor-icons`: `lucide-react` (580 kB, gzip: 154 kB).
   - `vendor-network`: `axios`, `js-cookie`, `jwt-decode` (53 kB, gzip: 20 kB).
-  - `vendor-geo`: `country-state-city` (isolated 8.7 MB database off critical startup path).
+  - `vendor-geo-countries`: `country-state-city/lib/country` (96 kB, gzip: 14 kB).
+  - `vendor-geo-states`: `country-state-city/lib/state` (555 kB, gzip: 121 kB).
   - `vendor-excel`: `xlsx`, `file-saver` (426 kB, gzip: 142 kB).
   - `vendor-editor`: `react-quill-new` (208 kB, gzip: 62 kB).
   - `vendor-ui`: `clsx`, `tailwind-merge`, `react-hot-toast` (isolated lightweight UI helpers).
-- **Zero Circular Chunks**: Eliminates Rollup circular chunk warnings; main app bundle size reduced from 867 kB down to 528 kB.
+- **Zero Oversized Chunks**: Eradicated the uncompressed 8.7MB `city.json` bundle by standardizing city inputs as clean text fields across all schemas (`ClientForm`, `employeeForm`, `vendors`, `profileForm`), switching to modular subpath imports (`country-state-city/lib/country.js` and `country-state-city/lib/state.js`), and splitting geo chunks into `vendor-geo-countries` and `vendor-geo-states`. Every single chunk is strictly under 600 kB with zero Vite warnings.
 
 ### 2. Centralized Console Logging & Environment Protection (`Frontend/src/utils/logger.js`)
 - **Production Console Silencing**: Suppresses `console.log`, `console.debug`, and `console.info` in production builds (`import.meta.env.PROD`).

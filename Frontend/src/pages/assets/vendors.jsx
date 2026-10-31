@@ -4,7 +4,8 @@ import TableGenerator from "@components/Common/TableGenerator";
 import toast from "react-hot-toast";
 import { StatusBadge } from "@components/StatusBadge";
 import { MdAdd, MdClose } from "react-icons/md";
-import { Country, State, City } from "country-state-city";
+import Country from "country-state-city/lib/country.js";
+import State from "country-state-city/lib/state.js";
 import SearchableDropdown from "../../components/Common/SearchableDropdown";
 
 
@@ -316,15 +317,12 @@ const Vendors = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-ink-muted mb-1">City</label>
-                      <SearchableDropdown
-                        placeholder="Select City"
+                      <input
+                        type="text"
+                        placeholder="Enter City"
                         value={city}
-                        disabled={!stateVal}
-                        options={(country && stateVal) ? City.getCitiesOfState(
-                          getCountryCode(country),
-                          getStateCode(getCountryCode(country), stateVal)
-                        ).map((c) => c.name) : []}
-                        onChange={(val) => setCity(val)}
+                        onChange={(e) => setCity(e.target.value)}
+                        className="lmx-input"
                       />
                     </div>
                     <div>

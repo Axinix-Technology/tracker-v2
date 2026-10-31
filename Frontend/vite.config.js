@@ -70,7 +70,10 @@ export default defineConfig({
               return 'vendor-network';
             }
             if (normalized.includes('/country-state-city/')) {
-              return 'vendor-geo';
+              if (normalized.includes('/state.') || normalized.includes('/state/')) {
+                return 'vendor-geo-states';
+              }
+              return 'vendor-geo-countries';
             }
             if (normalized.includes('/xlsx/') || normalized.includes('/file-saver/')) {
               return 'vendor-excel';

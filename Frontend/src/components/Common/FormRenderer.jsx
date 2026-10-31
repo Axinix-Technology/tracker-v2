@@ -3,7 +3,8 @@ import axiosInstance from "../../api/axiosInstance";
 import toast from "react-hot-toast";
 import { ChevronDown, X, Search, Upload, FileText, Plus, Trash2, Check, Calendar, Eye, EyeOff, Crop, Image as ImageIcon } from "lucide-react";
 import ImageCropperModal from "./ImageCropperModal";
-import { Country, State, City } from "country-state-city";
+import Country from "country-state-city/lib/country.js";
+import State from "country-state-city/lib/state.js";
 import {
   buildDirtyPatch,
   getNestedValue,
@@ -882,26 +883,6 @@ const FormRenderer = ({
             isoCode: s.isoCode
           }));
           setDynamicOptions(prev => ({ ...prev, [field.name]: states }));
-        } else {
-          setDynamicOptions(prev => ({ ...prev, [field.name]: [] }));
-        }
-        return;
-      }
-
-      if (field.source?.startsWith("/cities") || field.name === "basicInfo.address.city" || field.name === "address.city" || field.name === "city") {
-        const stateVal = getNestedValue(formData, field.dependsOn || 'basicInfo.address.state') || getNestedValue(formData, 'address.state') || getNestedValue(formData, 'state');
-        const countryVal = getNestedValue(formData, 'basicInfo.address.country') || getNestedValue(formData, 'address.country') || getNestedValue(formData, 'country');
-        const countryName = typeof countryVal === 'object' ? (countryVal?.name || countryVal?.value) : countryVal;
-        const stateName = typeof stateVal === 'object' ? (stateVal?.name || stateVal?.value) : stateVal;
-        const countryCode = getCountryCode(countryName);
-        const stateCode = getStateCode(countryCode, stateName);
-        if (countryCode && stateCode) {
-          const cities = City.getCitiesOfState(countryCode, stateCode).map(c => ({
-            _id: c.name,
-            name: c.name,
-            value: c.name
-          }));
-          setDynamicOptions(prev => ({ ...prev, [field.name]: cities }));
         } else {
           setDynamicOptions(prev => ({ ...prev, [field.name]: [] }));
         }

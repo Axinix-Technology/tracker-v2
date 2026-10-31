@@ -99,10 +99,8 @@ export const profileFormFields = (userData) => [
   {
     name: "basicInfo.address.city",
     label: "City",
-    type: "AutoComplete",
-    source: "/cities/:stateId",
-    dependsOn: "basicInfo.address.state",
-    placeholder: "Select city",
+    type: "text",
+    placeholder: "Enter city",
     orderKey: 12,
     gridClass: "col-span-1",
   },
