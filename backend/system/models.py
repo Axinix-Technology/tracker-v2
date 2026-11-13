@@ -327,3 +327,22 @@ class Product(models.Model):
     def __str__(self):
         return f"{self.name} [{self.code}] - {self.unit_price}"
 
+
+# ============================================================================
+# 9. SHOWCASE & WEBSITE CMS MODELS
+# ============================================================================
+from .showcase_models import (
+    SiteSectionContent,
+    CompanyProfile,
+    ShowcaseAnnouncement,
+    ShowcaseStat,
+    ShowcaseSolution,
+    ShowcaseIndustry,
+    ShowcaseService,
+    ShowcasePortfolio,
+    ShowcaseTestimonial,
+    ShowcaseCategory,
+    ShowcaseProduct,
+    WebsiteInquiry,
+)
+

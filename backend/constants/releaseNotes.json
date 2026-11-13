@@ -1,10 +1,32 @@
 [
   {
+    "version": "4.2.0",
+    "releaseDate": "2026-11-12",
+    "title": "Release v4.2.0 - Website Configuration & Showcase CMS",
+    "tagline": "Dynamic website configuration, showcase content management, and external portal modernization.",
+    "isLatest": true,
+    "type": "Feature & Maintenance Release",
+    "categories": {
+      "features": [
+        "Website configuration management system and CMS capabilities",
+        "External portal showcase models, dynamic configuration, and landing page modernization",
+        "Brand assets and hero visual hub enhancements"
+      ],
+      "improvements": [
+        "Migrated External portal to modern high-performance Vite architecture",
+        "Populate engine public read/write permission mappings for CMS models",
+        "Release increment to v4.2.0"
+      ],
+      "security": [],
+      "fixes": []
+    }
+  },
+  {
     "version": "4.1.1",
     "releaseDate": "2026-10-31",
     "title": "Release v4.1.1",
     "tagline": "Platform enhancements and continuous improvements.",
-    "isLatest": true,
+    "isLatest": false,
     "type": "Feature & Maintenance Release",
     "categories": {
       "features": [],

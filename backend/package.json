@@ -1,10 +1,10 @@
 {
   "name": "workhub-tracker-v2-backend",
-  "version": "4.1.1",
+  "version": "4.2.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "python manage.py runserver 0.0.0.0:8000",
+    "dev": "python manage.py runserver 0.0.0.0:8001",
     "test": "python manage.py test tests_api.test_postman_api_contract",
     "test:postman": "python simulate_postman_api_test.py",
     "migrate": "python manage.py migrate",

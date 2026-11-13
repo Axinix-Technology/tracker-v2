@@ -47,7 +47,11 @@ class LoginView(APIView):
         drf_token, _ = Token.objects.get_or_create(user=user)
 
         role_name = user.role.name if user.role else "Employee"
-        is_super = getattr(user, "is_superadmin", False)
+        is_super = bool(
+            (user.role and getattr(user.role, "is_superadmin", False))
+            or getattr(user, "is_superuser", False)
+            or getattr(user, "is_superadmin", False)
+        )
 
         # Construct JWT payload matching Frontend jwtDecode expectations
         jwt_payload = {
