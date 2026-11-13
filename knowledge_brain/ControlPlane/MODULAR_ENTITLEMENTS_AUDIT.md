@@ -49,7 +49,9 @@ We established a strict physical and logical decoupling:
 | **Phase 1** | `root_admin` | Read Tenants & Modules | Platform | `HTTP 200` | 🟢 Root Authorized |
 | **Phase 2** | `management_viewer` | Read Tenants | Platform | `HTTP 200` | 🟢 Read Allowed |
 | **Phase 2** | `management_viewer` | Mutate / Create Tenant | Platform | `HTTP 403` | 🟢 Blocked (`READ_ONLY_ROLE`) |
-| **Phase 3** | `alice@acme.com` | Access Platform `module` | Platform | `HTTP 403` | 🟢 Blocked (`PLATFORM_ACCESS_FORBIDDEN`) |
+| **Phase 3** | `alice@acme.com` | Read Module Catalog (`module`) | Storefront/Client | `HTTP 200` | 🟢 Read Allowed (Catalog Inspection) |
+| **Phase 3** | `alice@acme.com` | Mutate Module (`module`) | Platform | `HTTP 403` | 🟢 Blocked (`PLATFORM_ACCESS_FORBIDDEN`) |
+| **Phase 3** | `alice@acme.com` | Access Private Platform Model (`tenant`) | Platform | `HTTP 403` | 🟢 Blocked (`PLATFORM_ACCESS_FORBIDDEN`) |
 | **Phase 4** | `alice@acme.com` | Attendance (`leave_type`) | Subscribed | `HTTP 200` | 🟢 Allowed |
 | **Phase 4** | `alice@acme.com` | Core (`user`, `role`) | Core | `HTTP 200` | 🟢 Allowed |
 | **Phase 4** | `alice@acme.com` | Payroll (`salary_structure`) | Unsubscribed | `HTTP 403` | 🟢 Blocked (`MODULE_NOT_SUBSCRIBED`) |
@@ -59,7 +61,7 @@ We established a strict physical and logical decoupling:
 | **Phase 5** | `alice@acme.com` | CRM (After Upgrade) | Unsubscribed | `HTTP 403` | 🟢 Still Blocked |
 | **Phase 6** | `alice@acme.com` | Payroll (After Degrade) | Degraded | `HTTP 403` | 🟢 Revoked (`MODULE_NOT_SUBSCRIBED`) |
 
-**Audit Result: 23 out of 23 probes passed with 0 permission leakages.**
+**Audit Result: 25 out of 25 probes passed with 0 permission leakages.**
 
 ---
 
@@ -91,6 +93,15 @@ We established a strict physical and logical decoupling:
 
 ### 5. `backend/control_plane/auth_views.py` & `urls.py`
 - Dedicated endpoint: `POST /api/platform/auth/login`.
+
+### 6. Dynamic Public Catalog & Interactive Workhub Calculator
+- **Storefront & Client Public Read**: `module` is included in `POPULATE_CONFIG['PUBLIC_READ_MODELS']`. Any visitor or client tenant can read `/api/populate/read/module` to inspect pricing, feature lists, categories, and icon configurations.
+- **Strict Mutation Guard**: Any attempt by client or unauthorized users to create, update, or delete a module raises HTTP 403 `PLATFORM_ACCESS_FORBIDDEN` / `READ_ONLY_ROLE`.
+- **Frontend / Storefront Integration**:
+  - `External/src/components/WorkhubModuleCalculator.jsx`: Interactive live pricing calculator dynamically querying `/api/populate/read/module` via `populateHelper`.
+  - `External/src/pages/workhub/index.jsx`: Workhub Modular Platform showcase page (`/workhub`).
+  - `backend/users/views.py`: `UserContextView` includes `enabled_modules` and resolves `isEntitled` for client users.
+- **Seeding**: `backend/control_plane/management/commands/seed_workhub_modules.py` populates the 10 canonical modules into MySQL.
 
 ---
 

@@ -93,20 +93,24 @@ class UserLoginService(BaseService):
 @register_service("module")
 class ModuleService(BaseService):
     def check_permission(self, context):
+        # 1. Read operations on the Module catalog are open to public / marketing website / clients
+        if context.action in ("read", "report", "statistics", "aggregate"):
+            return True
+
+        # 2. Mutations (create, update, delete) are strictly restricted to Platform Root Admin
         is_root = getattr(context, "is_root_admin", False) or getattr(getattr(context, "user", None), "is_root_admin", False)
         if is_root:
             return True
+
         user = getattr(context, "user", None)
         user_plane = getattr(user, "plane", "client")
         if user_plane == "platform":
             role_id = getattr(getattr(user, "role", None), "role_id", "")
             if role_id in ("root_admin", "superadmin"):
                 return True
-            if role_id == "management_viewer":
-                if context.action in ("read", "report", "statistics", "aggregate"):
-                    return True
-                raise AuthorizationError("Management Viewer has read-only access to modules.", code="READ_ONLY_ROLE", status_code=403)
-        raise AuthorizationError("Access to the global module catalog is restricted to Platform Operators.", code="PLATFORM_ACCESS_FORBIDDEN", status_code=403)
+            raise AuthorizationError("Only Platform Root Admin can mutate modules.", code="READ_ONLY_ROLE", status_code=403)
+
+        raise AuthorizationError("Access to modify global module catalog is restricted to Platform Operators.", code="PLATFORM_ACCESS_FORBIDDEN", status_code=403)
 
     def get_policy_scope(self, context):
         return Q(is_active=True, lifecycle_status=1)

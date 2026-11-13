@@ -92,14 +92,36 @@ class UserLogin(models.Model):
     "module",
     table_type="system",
     aliases=["modules"],
-    search_fields=["module_id", "name"],
+    search_fields=["module_id", "name", "category"],
     status_field="is_active",
-    public_fields=["module_id", "name", "description", "collections", "is_active"]
+    public_fields=[
+        "module_id",
+        "name",
+        "description",
+        "category",
+        "icon",
+        "price_per_user_monthly",
+        "features",
+        "prerequisites",
+        "collections",
+        "is_active",
+    ]
 )
 class Module(models.Model):
     module_id = models.CharField(max_length=64, unique=True, db_index=True)
     name = models.CharField(max_length=128)
+    category = models.CharField(max_length=64, default="Operations", db_index=True)
+    icon = models.CharField(max_length=64, default="Box")
+    price_per_user_monthly = models.DecimalField(max_digits=10, decimal_places=2, default=30.00)
     description = models.TextField(blank=True, null=True)
+    features = models.JSONField(
+        default=list,
+        help_text="Key bullet points for storefront marketing"
+    )
+    prerequisites = models.JSONField(
+        default=list,
+        help_text="e.g. ['attendance'] required before payroll"
+    )
     collections = models.JSONField(
         default=list,
         help_text="Registered model names granted under this module"

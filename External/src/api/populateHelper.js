@@ -41,6 +41,8 @@ const MODEL_BACKEND_MAP = {
   company: 'company_profile',
   profile: 'company_profile',
   sections: 'site_section_content',
+  modules: 'module',
+  module: 'module',
 };
 
 function getBaselineData(model) {

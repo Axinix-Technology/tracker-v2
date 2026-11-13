@@ -195,7 +195,7 @@ def run_two_plane_entitlements_audit():
     # ------------------------------------------------------------------------
     print_banner("PHASE 3: CLIENT SUPERADMIN BOUNDARY CHECK (Control Plane Isolation)")
     print("  Testing User: alice@acme.com (Client SuperAdmin)")
-    print("  Expected: Must be FORBIDDEN (HTTP 403) from accessing Platform models (e.g. module).")
+    print("  Expected: Can inspect Module catalog (200), but CANNOT mutate modules (403) & CANNOT access tenant (403).")
 
     client_admin.plane = "client"
     client_admin.is_root_admin = False
@@ -204,11 +204,23 @@ def run_two_plane_entitlements_audit():
     client.force_authenticate(user=client_admin)
     headers = {"HTTP_X_TENANT_ID": "acme-corp", "HTTP_X_TENANT_SLUG": "acme"}
 
-    # Attempt to read module catalog as client user
-    res = client.get("/api/populate/read/module", **headers)
-    v = "🟢 SAFE (PLATFORM BLOCKED)" if res.status_code == 403 else f"🔴 LEAKAGE ({res.status_code})"
-    print(f"  [{res.status_code}] Client SuperAdmin Access Platform Modules: {v}")
-    audit_records.append({"step": "3. Client Access Platform Model Blocked", "status": res.status_code, "verdict": v})
+    # 3.1 Public/Client module catalog read (200 Allowed)
+    res_mod_read = client.get("/api/populate/read/module", **headers)
+    v1 = "🟢 SAFE (PUBLIC READ ALLOWED)" if res_mod_read.status_code == 200 else f"🔴 FAILED ({res_mod_read.status_code})"
+    print(f"  [{res_mod_read.status_code}] Client SuperAdmin Read Module Catalog: {v1}")
+    audit_records.append({"step": "3. Client Read Module Catalog Allowed", "status": res_mod_read.status_code, "verdict": v1})
+
+    # 3.2 Module mutation attempt (403 Blocked)
+    res_mod_mutate = client.post("/api/populate/create/module", {"module_id": "unauth", "name": "Hack"}, format="json", **headers)
+    v2 = "🟢 SAFE (MUTATION BLOCKED)" if res_mod_mutate.status_code == 403 else f"🔴 LEAKAGE ({res_mod_mutate.status_code})"
+    print(f"  [{res_mod_mutate.status_code}] Client SuperAdmin Mutate Module: {v2}")
+    audit_records.append({"step": "3. Client Mutate Module Blocked", "status": res_mod_mutate.status_code, "verdict": v2})
+
+    # 3.3 Private platform model access (tenant - 403 Blocked)
+    res_tenant = client.get("/api/populate/read/tenant", **headers)
+    v3 = "🟢 SAFE (PLATFORM BLOCKED)" if res_tenant.status_code == 403 else f"🔴 LEAKAGE ({res_tenant.status_code})"
+    print(f"  [{res_tenant.status_code}] Client SuperAdmin Access Private Platform Model (Tenant): {v3}")
+    audit_records.append({"step": "3. Client Access Tenant Blocked", "status": res_tenant.status_code, "verdict": v3})
 
     # ------------------------------------------------------------------------
     # PHASE 4: INITIAL PURCHASE - ONLY ATTENDANCE MODULE

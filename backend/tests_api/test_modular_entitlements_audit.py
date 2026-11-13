@@ -125,13 +125,26 @@ class ModularEntitlementsAuditTestCase(TestCase):
         self.assertEqual(res_mutate.data.get("error", {}).get("code"), "READ_ONLY_ROLE")
 
     def test_03_client_superadmin_blocked_from_platform_models(self):
-        """Client SuperAdmin cannot access platform control plane models."""
+        """
+        Client SuperAdmin can inspect the public module catalog via Populate (200),
+        but CANNOT mutate modules (403) and CANNOT access private platform models like tenant (403).
+        """
         self.client.force_authenticate(user=self.client_admin)
         headers = {"HTTP_X_TENANT_ID": "acme-corp", "HTTP_X_TENANT_SLUG": "acme"}
 
-        res = self.client.get("/api/populate/read/module", **headers)
-        self.assertEqual(res.status_code, 403)
-        self.assertEqual(res.data.get("error", {}).get("code"), "PLATFORM_ACCESS_FORBIDDEN")
+        # 1. Module Catalog Read is open via Populate (for client and website)
+        res_read_module = self.client.get("/api/populate/read/module", **headers)
+        self.assertEqual(res_read_module.status_code, 200)
+
+        # 2. Mutating modules is strictly blocked
+        res_mutate_module = self.client.post("/api/populate/create/module", {"module_id": "hacked", "name": "Hacked Module"}, format="json", **headers)
+        self.assertEqual(res_mutate_module.status_code, 403)
+        self.assertEqual(res_mutate_module.data.get("error", {}).get("code"), "PLATFORM_ACCESS_FORBIDDEN")
+
+        # 3. Private Platform Models (tenant, provisioning_run) are strictly blocked
+        res_tenant = self.client.get("/api/populate/read/tenant", **headers)
+        self.assertEqual(res_tenant.status_code, 403)
+        self.assertEqual(res_tenant.data.get("error", {}).get("code"), "PLATFORM_ACCESS_FORBIDDEN")
 
     def test_04_initial_purchase_zero_permission_leakage(self):
         """

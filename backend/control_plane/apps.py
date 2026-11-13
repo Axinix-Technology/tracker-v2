@@ -9,6 +9,9 @@ class ControlPlaneConfig(AppConfig):
     def ready(self):
         try:
             import control_plane.services  # noqa: F401
-        except ImportError:
-            pass
+            from control_plane.policy_patch import apply_policy_patch
+            apply_policy_patch()
+        except Exception as exc:
+            import traceback
+            traceback.print_exc()
 

@@ -150,15 +150,36 @@ class UserContextView(APIView):
         role_name = role_obj.name if role_obj else "SuperAdmin"
         is_super = getattr(user, "is_superadmin", False)
 
+        # Resolve tenant enabled_modules
+        tenant_id = (
+            getattr(request, "tenant_id", None)
+            or getattr(user, "tenant_id", None)
+            or getattr(getattr(user, "tenant", None), "tenant_id", None)
+        )
+        enabled_modules = []
+        if tenant_id:
+            from control_plane.models import Tenant
+            t = Tenant.objects.filter(tenant_id=tenant_id).first()
+            if t:
+                enabled_modules = t.enabled_modules or []
+
         from populate_core.registry.model_registry import ModelRegistry
+        from control_plane.registry import is_model_entitled, is_platform_model
+
         permissions = {}
         for m_name in ModelRegistry.get_all().keys():
+            # Exclude private platform models from client user context
+            if is_platform_model(m_name) and m_name not in ("module", "modules"):
+                continue
+
+            entitled = is_model_entitled(m_name, enabled_modules)
             permissions[m_name] = {
-                "read": True,
-                "create": is_super,
-                "update": is_super,
-                "delete": is_super,
-                "report": True,
+                "read": entitled,
+                "create": is_super and entitled,
+                "update": is_super and entitled,
+                "delete": is_super and entitled,
+                "report": entitled,
+                "isEntitled": entitled,
             }
 
         user_full_name = f"{user.first_name} {user.last_name}".strip() or user.username
@@ -181,6 +202,7 @@ class UserContextView(APIView):
                         "isSuperAdmin": is_super,
                     }
                 },
+                "enabled_modules": enabled_modules,
                 "capabilities": [],
                 "permissions": permissions,
                 "navigation": [],

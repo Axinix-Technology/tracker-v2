@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'crm',                     # <--- Product: CRM Pipeline, Leads, Deals, Activities & Meetings
     'recruitment',             # <--- Product: Job Postings, Candidate Tracking & Employee Onboarding
     'system',                  # <--- Platform: Status Master, Email Config, Release Notes, Resources & Workflows
-    'control_plane',           # <--- Control Plane: Multi-Tenant Provisioning, User Logins & Module Entitlements
+    'control_plane.apps.ControlPlaneConfig', # <--- Control Plane: Multi-Tenant Provisioning, User Logins & Module Entitlements
 ]
 
 MIDDLEWARE = [
@@ -177,6 +177,8 @@ POPULATE_CONFIG = {
         'showcase_categories',
         'showcase_product',
         'showcase_products',
+        'module',
+        'modules',
     ],
     'PUBLIC_CREATE_MODELS': [
         'website_inquiry',

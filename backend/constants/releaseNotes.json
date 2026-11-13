@@ -1,10 +1,36 @@
 [
   {
+    "version": "4.3.1",
+    "releaseDate": "2026-11-13",
+    "title": "Release v4.3.1 - Public Module Catalog & Interactive Workhub Calculator",
+    "tagline": "Dynamic module storefront catalog, interactive Workhub calculator, and modular entitlement enforcement.",
+    "isLatest": true,
+    "type": "Feature & Maintenance Release",
+    "categories": {
+      "features": [
+        "Interactive Workhub ERP modular bundle calculator and showcase explorer on external storefront",
+        "Dedicated Workhub platform showcase screen (/workhub) with live pricing and architectural pillars",
+        "Database seeder command for 10 canonical Workhub ERP modules with pricing, features, and prerequisites",
+        "Dynamic client user context entitlement resolution with isEntitled flags and enabled_modules payload"
+      ],
+      "improvements": [
+        "Hydrate module catalog dynamically via Populate Engine (/api/populate/read/module)",
+        "Added module search fields and public attributes (category, icon, price_per_user_monthly, features, prerequisites)"
+      ],
+      "security": [
+        "Decoupled Two-Plane PolicyEngine enforcement for Platform vs Client planes",
+        "Public and client catalog read access with strict mutation lockdown (HTTP 403) for non-root admins",
+        "Strict isolation of private control plane models (tenant, provisioning_run)"
+      ],
+      "fixes": []
+    }
+  },
+  {
     "version": "4.3.0",
     "releaseDate": "2026-11-13",
     "title": "Release v4.3.0",
     "tagline": "Platform enhancements and continuous improvements.",
-    "isLatest": true,
+    "isLatest": false,
     "type": "Feature & Maintenance Release",
     "categories": {
       "features": [],
