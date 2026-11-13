@@ -12,6 +12,7 @@
 - [Billing](file:///d:/Axinix%20Projects/tracker-v2/knowledge_brain/Billing/MODULE_BRAIN.md) — Client Invoicing & Accounting suite: quotations, revisions, order acknowledgements, invoices, payments, journals, ledgers, period closures.
 - [Common](file:///d:/Axinix%20Projects/tracker-v2/knowledge_brain/Common/) — Shared utilities, system constants, and base exceptions.
 - [ControlPlane](file:///d:/Axinix%20Projects/tracker-v2/knowledge_brain/ControlPlane/MODULE_BRAIN.md) — Multi-Tenant Control Plane: organization directories, user logins, database provisioning logs, and [Modular Entitlements Audit](file:///d:/Axinix%20Projects/tracker-v2/knowledge_brain/ControlPlane/MODULAR_ENTITLEMENTS_AUDIT.md).
+- [Contributions](file:///d:/Axinix%20Projects/tracker-v2/knowledge_brain/Contributions/MODULE_BRAIN.md) — Work Contributions, Multi-Factor Point Weighting, In-Progress Follow-Up Lifecycle & Shareholder Equity Distribution.
 - [Core](file:///d:/Axinix%20Projects/tracker-v2/knowledge_brain/Core/) — Django Populate Core pipeline (10-stage execution engine, ABAC, and audit logger).
 - [CRM](file:///d:/Axinix%20Projects/tracker-v2/knowledge_brain/CRM/MODULE_BRAIN.md) — Customer Relationship Management: leads, contacts, opportunities, deal pipelines, and client meetings.
 - [Dashboard](file:///d:/Axinix%20Projects/tracker-v2/knowledge_brain/Dashboard/) — Dynamic role-based dashboard layouts, widget schemas, and KPI aggregation.

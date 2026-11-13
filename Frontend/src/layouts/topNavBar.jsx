@@ -116,15 +116,15 @@ const TopNavBar = ({ onToggleSidebar, sidebarOpen }) => {
           >
             <div className="text-right hidden md:block">
               <p className="text-sm font-medium leading-none text-ink group-hover:text-[var(--module-accent)] transition-colors">
-                {userName || user?.name || "Guest"}
+                {userName || user?.name || user?.firstName || "Guest"}
               </p>
               <p className="text-[11px] text-ink-subtle mt-0.5 capitalize">{roleName || "Employee"}</p>
             </div>
             <div className="h-9 w-9 rounded-full overflow-hidden ring-2 ring-hairline group-hover:ring-accent transition-all">
               <ProfileImage
                 profileImage={profileImage}
-                firstName={(userName || user?.name || "")?.split(" ")[0]}
-                lastName={(userName || user?.name || "")?.split(" ").slice(1).join(" ")}
+                firstName={(userName || user?.name || user?.firstName || "")?.split(" ")[0]}
+                lastName={(userName || user?.name || user?.lastName || "")?.split(" ").slice(1).join(" ")}
                 size="sm"
                 className="w-full h-full"
               />

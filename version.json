@@ -1,8 +1,8 @@
 {
   "name": "workhub-tracker-v2",
-  "version": "4.3.1",
+  "version": "4.4.0",
   "description": "Workhub ERP Tracker Platform",
-  "updatedAt": "2026-11-13T10:45:49.769Z",
+  "updatedAt": "2026-11-13T12:32:59.269Z",
   "minSupportedClientVersion": "3.0.0",
   "forceDeploy": true
 }

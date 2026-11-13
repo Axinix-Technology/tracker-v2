@@ -1,65 +1,29 @@
 [
   {
-    "version": "4.3.1",
+    "version": "4.4.0",
     "releaseDate": "2026-11-13",
-    "title": "Release v4.3.1 - Public Module Catalog & Interactive Workhub Calculator",
-    "tagline": "Dynamic module storefront catalog, interactive Workhub calculator, and modular entitlement enforcement.",
+    "title": "Release v4.4.0 - Work Contributions, Follow-Ups & Shareholder Equity Subsystem",
+    "tagline": "AI-powered WhatsApp chat drop, multi-factor evaluation engine, in-progress follow-up radar, and shareholder equity profit distribution.",
     "isLatest": true,
     "type": "Feature & Maintenance Release",
     "categories": {
       "features": [
-        "Interactive Workhub ERP modular bundle calculator and showcase explorer on external storefront",
-        "Dedicated Workhub platform showcase screen (/workhub) with live pricing and architectural pillars",
-        "Database seeder command for 10 canonical Workhub ERP modules with pricing, features, and prerequisites",
-        "Dynamic client user context entitlement resolution with isEntitled flags and enabled_modules payload"
+        "Work Contribution & Shareholder Equity Subsystem in Django backend (/api/populate/read/work_contribution, /create, /update, /delete)",
+        "WhatsApp-style Quick Work Status AI Ingress (/contributions/add) extracting activities, scopes, categories, and points from raw text",
+        "Deterministic 6-Factor Quality & Impact Evaluation Engine (Effort 20%, Skill 15%, Deliverable 25%, Quality 20%, Evidence 10%, Outcome 10%)",
+        "In-Progress Work Follow-Up Lifecycle Engine (/contributions/follow-ups) tracking stalled tasks (>48h) and unlocking remaining 25% points upon completion",
+        "Executive Contribution & Shareholder Dashboard (/contributions/dashboard) with 3-way comparative tables (Project, Company, Combined) and live profit pool simulator",
+        "Multi-dimensional Filterable Reports & Granular Audit Ledger (/contributions/reports) with single-entry detail view and CSV export"
       ],
       "improvements": [
-        "Hydrate module catalog dynamically via Populate Engine (/api/populate/read/module)",
-        "Added module search fields and public attributes (category, icon, price_per_user_monthly, features, prerequisites)"
+        "Database seeder command (seed_contributions) initializing 58 contribution categories, 6 evaluation factors, and baseline company entries",
+        "Pure page-only routing architecture (/contributions/dashboard, /add, /follow-ups, /reports) complying with platform laws",
+        "Added module documentation in knowledge_brain/Contributions/MODULE_BRAIN.md and indexed alphabetically in knowledge_brain/INDEX.md"
       ],
       "security": [
-        "Decoupled Two-Plane PolicyEngine enforcement for Platform vs Client planes",
-        "Public and client catalog read access with strict mutation lockdown (HTTP 403) for non-root admins",
-        "Strict isolation of private control plane models (tenant, provisioning_run)"
+        "Server-side immutable point and factor calculations in WorkContributionService preventing client-side point manipulation",
+        "Strict ABAC policy enforcement with platform-wide transparency for shareholder equity calculations"
       ],
-      "fixes": []
-    }
-  },
-  {
-    "version": "4.3.0",
-    "releaseDate": "2026-11-13",
-    "title": "Release v4.3.0",
-    "tagline": "Platform enhancements and continuous improvements.",
-    "isLatest": false,
-    "type": "Feature & Maintenance Release",
-    "categories": {
-      "features": [],
-      "improvements": [
-        "Release increment to v4.3.0"
-      ],
-      "security": [],
-      "fixes": []
-    }
-  },
-  {
-    "version": "4.2.0",
-    "releaseDate": "2026-11-12",
-    "title": "Release v4.2.0 - Website Configuration & Showcase CMS",
-    "tagline": "Dynamic website configuration, showcase content management, and external portal modernization.",
-    "isLatest": false,
-    "type": "Feature & Maintenance Release",
-    "categories": {
-      "features": [
-        "Website configuration management system and CMS capabilities",
-        "External portal showcase models, dynamic configuration, and landing page modernization",
-        "Brand assets and hero visual hub enhancements"
-      ],
-      "improvements": [
-        "Migrated External portal to modern high-performance Vite architecture",
-        "Populate engine public read/write permission mappings for CMS models",
-        "Release increment to v4.2.0"
-      ],
-      "security": [],
       "fixes": []
     }
   },

@@ -154,6 +154,11 @@ CLIENT_BUSINESS_MODULES: Dict[str, Set[str]] = {
         "team_message",
         "comments_thread",
     },
+    "contributions": {
+        "contribution_category",
+        "contribution_factor",
+        "work_contribution",
+    },
 }
 
 

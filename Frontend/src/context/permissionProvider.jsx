@@ -46,7 +46,7 @@ export const PermissionProvider = ({ children }) => {
       if (cached) {
         const parsedCtx = JSON.parse(cached);
         const parsed = parseContext(parsedCtx);
-        if (parsed) {
+        if (parsed && parsed.navigation && parsed.navigation.length > 0) {
           return { ...parsed, loading: false };
         }
       }

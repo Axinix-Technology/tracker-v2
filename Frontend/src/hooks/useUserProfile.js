@@ -10,7 +10,7 @@ export const useUserProfile = () => {
 
   // Derive initial values immediately from user session token
   const initialRole = typeof user?.role === 'string' ? user.role : user?.role?.name || null;
-  const initialName = user?.name || null;
+  const initialName = user?.name || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.first_name || user?.username || null;
 
   // Check memory or sessionStorage cache
   const cached = targetId ? profileCache.get(targetId) : null;

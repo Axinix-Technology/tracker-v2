@@ -192,6 +192,24 @@ WORKHUB_MODULES = [
         "prerequisites": [],
         "collections": list(CLIENT_BUSINESS_MODULES.get("feed", [])),
     },
+    {
+        "module_id": "contributions",
+        "name": "Work Contributions & Shareholder Equity",
+        "category": "Operations & Equity",
+        "icon": "Award",
+        "price_per_user_monthly": Decimal("35.00"),
+        "description": "WhatsApp-style daily work status drops, AI-driven activity extraction, 6-factor deterministic point weighting, in-progress follow-up radar, and shareholder profit dividend distribution.",
+        "features": [
+            "WhatsApp & Slack style quick status AI ingress",
+            "Deterministic 6-factor quality weighting (Effort, Skill, Deliverable, Quality, Evidence, Outcome)",
+            "Automated in-progress follow-up radar for stalled activities (>48h)",
+            "Executive 3-way comparative matrix (Project, Company, Combined points)",
+            "Live shareholder dividend and profit pool payout simulator",
+            "Granular multi-filter audit ledger with one-click CSV/PDF export",
+        ],
+        "prerequisites": [],
+        "collections": list(CLIENT_BUSINESS_MODULES.get("contributions", [])),
+    },
 ]
 
 

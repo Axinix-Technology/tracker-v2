@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'crm',                     # <--- Product: CRM Pipeline, Leads, Deals, Activities & Meetings
     'recruitment',             # <--- Product: Job Postings, Candidate Tracking & Employee Onboarding
     'system',                  # <--- Platform: Status Master, Email Config, Release Notes, Resources & Workflows
+    'contributions',           # <--- Product: Work Contributions, Follow-ups & Shareholder Equity
     'control_plane.apps.ControlPlaneConfig', # <--- Control Plane: Multi-Tenant Provisioning, User Logins & Module Entitlements
 ]
 

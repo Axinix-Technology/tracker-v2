@@ -108,9 +108,13 @@ def decoupled_authorize(cls, context: Any) -> Any:
         enabled_modules = []
         if getattr(context, "tenant_context", None):
             enabled_modules = context.tenant_context.get("enabled_modules", [])
-        if not enabled_modules and tenant_id:
+        if not enabled_modules:
             from control_plane.models import Tenant
-            tenant_obj = Tenant.objects.filter(tenant_id=tenant_id).first()
+            tenant_obj = None
+            if tenant_id and tenant_id not in ("default", "admin"):
+                tenant_obj = Tenant.objects.filter(tenant_id=tenant_id).first()
+            if not tenant_obj:
+                tenant_obj = Tenant.objects.filter(tenant_id="axinix").first() or Tenant.objects.first()
             if tenant_obj:
                 enabled_modules = tenant_obj.enabled_modules or []
 

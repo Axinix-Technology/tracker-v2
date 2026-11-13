@@ -54,10 +54,23 @@ class LoginView(APIView):
         )
 
         # Construct JWT payload matching Frontend jwtDecode expectations
+        user_full_name = f"{user.first_name} {user.last_name}".strip() or user.username
+
+        # Resolve tenant ID & tenant slug
+        from control_plane.models import UserLogin, Tenant
+        user_login = UserLogin.objects.filter(email__iexact=user.email).select_related("tenant").first()
+        tenant = user_login.tenant if user_login and user_login.tenant else None
+        if not tenant:
+            tenant = Tenant.objects.filter(tenant_id="axinix").first() or Tenant.objects.first()
+
+        tenant_id = tenant.tenant_id if tenant else "axinix"
+        tenant_slug = tenant.subdomain if tenant and tenant.subdomain else "axinix"
+
         jwt_payload = {
             "id": user.id,
             "username": user.username,
             "email": user.email,
+            "name": user_full_name,
             "role": role_name,
             "roleId": user.role.id if user.role else None,
             "isSuperAdmin": is_super,
@@ -65,8 +78,8 @@ class LoginView(APIView):
             "userType": "superadmin" if is_super else "employee",
             "firstName": user.first_name,
             "lastName": user.last_name,
-            "tenantSlug": "admin",
-            "tenantId": "default",
+            "tenantSlug": tenant_slug,
+            "tenantId": tenant_id,
             "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7),
             "iat": datetime.datetime.now(datetime.timezone.utc),
         }
@@ -91,11 +104,16 @@ class LoginView(APIView):
             "id": user.id,
             "username": user.username,
             "email": user.email,
+            "name": user_full_name,
             "first_name": user.first_name,
             "last_name": user.last_name,
+            "firstName": user.first_name,
+            "lastName": user.last_name,
             "role": role_data,
             "is_superadmin": is_super,
             "isSuperAdmin": is_super,
+            "tenantId": tenant_id,
+            "tenantSlug": tenant_slug,
         }
 
         # Dual envelope: works for both React Frontend and DRF clients
@@ -140,7 +158,7 @@ class ProfileView(APIView):
 class UserContextView(APIView):
     """
     GET /api/auth/me/context
-    Returns user profile, role, permissions map, and capabilities.
+    Returns user profile, role, permissions map, capabilities, and navigation.
     """
     permission_classes = [IsAuthenticated]
 
@@ -148,20 +166,22 @@ class UserContextView(APIView):
         user = request.user
         role_obj = user.role
         role_name = role_obj.name if role_obj else "SuperAdmin"
-        is_super = getattr(user, "is_superadmin", False)
-
-        # Resolve tenant enabled_modules
-        tenant_id = (
-            getattr(request, "tenant_id", None)
-            or getattr(user, "tenant_id", None)
-            or getattr(getattr(user, "tenant", None), "tenant_id", None)
+        is_super = bool(
+            getattr(user, "is_superadmin", False)
+            or getattr(user, "is_superuser", False)
+            or (role_obj and getattr(role_obj, "is_superadmin", False))
         )
-        enabled_modules = []
-        if tenant_id:
-            from control_plane.models import Tenant
-            t = Tenant.objects.filter(tenant_id=tenant_id).first()
-            if t:
-                enabled_modules = t.enabled_modules or []
+
+        # Resolve tenant & enabled_modules
+        from control_plane.models import UserLogin, Tenant
+        user_login = UserLogin.objects.filter(email__iexact=user.email).select_related("tenant").first()
+        tenant = user_login.tenant if user_login and user_login.tenant else None
+        if not tenant:
+            tenant = Tenant.objects.filter(tenant_id="axinix").first() or Tenant.objects.first()
+
+        enabled_modules = tenant.enabled_modules if tenant and tenant.enabled_modules else []
+        tenant_id = tenant.tenant_id if tenant else "axinix"
+        tenant_slug = tenant.subdomain if tenant and tenant.subdomain else "axinix"
 
         from populate_core.registry.model_registry import ModelRegistry
         from control_plane.registry import is_model_entitled, is_platform_model
@@ -184,6 +204,9 @@ class UserContextView(APIView):
 
         user_full_name = f"{user.first_name} {user.last_name}".strip() or user.username
 
+        from users.navigation import get_user_navigation
+        nav_tree = get_user_navigation(user, enabled_modules=enabled_modules, is_superadmin=is_super)
+
         return Response({
             "success": True,
             "data": {
@@ -200,12 +223,16 @@ class UserContextView(APIView):
                         "name": role_name,
                         "level": 1,
                         "isSuperAdmin": is_super,
-                    }
+                    },
+                    "tenantId": tenant_id,
+                    "tenantSlug": tenant_slug,
                 },
+                "tenantId": tenant_id,
+                "tenantSlug": tenant_slug,
                 "enabled_modules": enabled_modules,
                 "capabilities": [],
                 "permissions": permissions,
-                "navigation": [],
+                "navigation": nav_tree,
                 "_v": 1,
                 "_cachedAt": datetime.datetime.now(datetime.timezone.utc).isoformat()
             }
