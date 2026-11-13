@@ -36,9 +36,35 @@ class DualTokenAndBearerAuthentication(BaseAuthentication):
             jwt_secret = getattr(settings, "SECRET_KEY", "django-insecure-tracker-v2-axinix-core-dev-key")
             payload = jwt.decode(token_str, jwt_secret, algorithms=["HS256"])
             user_id = payload.get("id") or payload.get("user_id")
+            plane = payload.get("plane", "client")
+
+            # Platform Plane User Resolution
+            if plane == "platform":
+                from control_plane.models import PlatformUser
+                platform_user = PlatformUser.objects.select_related("role").filter(pk=user_id).first()
+                if platform_user and platform_user.is_active:
+                    platform_user.plane = "platform"
+                    platform_user.is_root_admin = getattr(platform_user.role, "is_root_admin", False)
+                    platform_user.is_superadmin = False
+                    platform_user.is_superuser = platform_user.is_root_admin
+                    return (platform_user, token_str)
+
+            # Client Plane User Resolution
             if user_id:
-                user = User.objects.filter(pk=user_id).first()
+                user = User.objects.select_related("role").filter(pk=user_id).first()
                 if user and user.is_active:
+                    user.plane = "client"
+                    user.is_root_admin = False
+                    user.is_super_admin = getattr(getattr(user, "role", None), "is_superadmin", False)
+                    # Resolve tenant ID from token, header, or query
+                    tenant_id = (
+                        payload.get("tenant_id")
+                        or payload.get("tenantSlug")
+                        or (request.headers.get("X-Tenant-ID") if hasattr(request, "headers") else None)
+                        or request.META.get("HTTP_X_TENANT_ID")
+                        or "default"
+                    )
+                    user.tenant_id = tenant_id
                     return (user, token_str)
         except (jwt.InvalidTokenError, jwt.ExpiredSignatureError):
             pass
@@ -48,6 +74,14 @@ class DualTokenAndBearerAuthentication(BaseAuthentication):
             token_obj = Token.objects.select_related("user").get(key=token_str)
             if not token_obj.user.is_active:
                 raise exceptions.AuthenticationFailed("User inactive or deleted.")
+            token_obj.user.plane = "client"
+            token_obj.user.is_root_admin = False
+            token_obj.user.is_super_admin = getattr(getattr(token_obj.user, "role", None), "is_superadmin", False)
+            token_obj.user.tenant_id = (
+                (request.headers.get("X-Tenant-ID") if hasattr(request, "headers") else None)
+                or request.META.get("HTTP_X_TENANT_ID")
+                or "default"
+            )
             return (token_obj.user, token_obj)
         except Token.DoesNotExist:
             pass

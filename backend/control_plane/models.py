@@ -156,3 +156,182 @@ class ProvisioningRun(models.Model):
     def __str__(self):
         return f"Provisioning for {self.tenant.subdomain} - {self.status}"
 
+
+# ============================================================================
+# 5. PLATFORM ROLE (PLATFORM CONTROL PLANE RBAC)
+# ============================================================================
+
+@register_model(
+    "platform_role",
+    table_type="system",
+    aliases=["platform_roles", "platformroles"],
+    search_fields=["role_id", "name"],
+    status_field="lifecycle_status",
+    public_fields=["role_id", "name", "description", "is_root_admin", "is_active"]
+)
+class PlatformRole(models.Model):
+    role_id = models.CharField(max_length=64, unique=True, db_index=True)  # e.g. root_admin, management_viewer, support_engineer
+    name = models.CharField(max_length=128, db_index=True)
+    description = models.CharField(max_length=255, blank=True, null=True)
+    is_root_admin = models.BooleanField(default=False, db_index=True)      # ONLY True for Root Admin
+    permissions = models.JSONField(
+        default=dict,
+        help_text="e.g. {'tenants': ['read'], 'metrics': ['read'], 'modules': ['read']} or {'*': ['*']}"
+    )
+    is_active = models.BooleanField(default=True, db_index=True)
+    lifecycle_status = models.SmallIntegerField(default=1, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "control_plane_platform_roles"
+        ordering = ["name"]
+
+    def __str__(self):
+        return f"{self.name} [{self.role_id}] (Root={self.is_root_admin})"
+
+
+# ============================================================================
+# 6. PLATFORM USER (DEDICATED PLATFORM CONTROL PLANE OPERATORS)
+# ============================================================================
+
+@register_model(
+    "platform_user",
+    table_type="system",
+    aliases=["platform_users", "platformusers"],
+    search_fields=["username", "email", "first_name", "last_name"],
+    status_field="is_active",
+    public_fields=["id", "username", "email", "first_name", "last_name", "role", "is_active"]
+)
+class PlatformUser(models.Model):
+    email = models.EmailField(unique=True, db_index=True)
+    username = models.CharField(max_length=150, unique=True, db_index=True)
+    password = models.CharField(max_length=255)
+    first_name = models.CharField(max_length=150, blank=True, null=True)
+    last_name = models.CharField(max_length=150, blank=True, null=True)
+    role = models.ForeignKey(
+        PlatformRole,
+        on_delete=models.PROTECT,
+        related_name="platform_users",
+        db_index=True
+    )
+    is_active = models.BooleanField(default=True, db_index=True)
+    last_login = models.DateTimeField(null=True, blank=True)
+    lifecycle_status = models.SmallIntegerField(default=1, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "control_plane_platform_users"
+        ordering = ["username"]
+
+    def __str__(self):
+        return f"{self.username} ({self.email}) [{self.role.name}]"
+
+    def check_password(self, raw_password):
+        from django.contrib.auth.hashers import check_password
+        return check_password(raw_password, self.password)
+
+    def set_password(self, raw_password):
+        from django.contrib.auth.hashers import make_password
+        self.password = make_password(raw_password)
+
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
+
+
+# ============================================================================
+# 7. RETENTION POLICY (STORAGE & DATA RETENTION RULES)
+# ============================================================================
+
+@register_model(
+    "retention_policy",
+    table_type="system",
+    aliases=["retention_policies", "retentionpolicies"],
+    search_fields=["policy_id", "module_id"],
+    status_field="lifecycle_status",
+    public_fields=["policy_id", "module_id", "grace_period_days", "storage_backend", "is_auto_purge_enabled"]
+)
+class RetentionPolicy(models.Model):
+    policy_id = models.CharField(max_length=64, unique=True, db_index=True)
+    module_id = models.CharField(max_length=64, default="all", db_index=True)
+    grace_period_days = models.PositiveIntegerField(default=90)
+    notification_days = models.JSONField(
+        default=list,
+        help_text="Days prior to purge to send notification emails e.g. [60, 80, 89]"
+    )
+    storage_backend = models.CharField(max_length=32, default="local")  # local, s3, r2
+    archive_tier = models.CharField(max_length=32, default="cold_zip")   # cold_zip, glacier, coldline
+    is_auto_purge_enabled = models.BooleanField(default=True, db_index=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    lifecycle_status = models.SmallIntegerField(default=1, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "control_plane_retention_policies"
+        ordering = ["module_id"]
+
+    def __str__(self):
+        return f"RetentionPolicy [{self.module_id}] - {self.grace_period_days}d"
+
+
+# ============================================================================
+# 8. RETENTION EVENT (DEGRADED MODULE LIFECYCLE & PURGE LEDGER)
+# ============================================================================
+
+@register_model(
+    "retention_event",
+    table_type="system",
+    aliases=["retention_events", "retentionevents"],
+    search_fields=["module_id", "status"],
+    status_field="lifecycle_status",
+    public_fields=[
+        "id", "tenant", "module_id", "status", "degraded_at",
+        "purge_scheduled_at", "reclaimed_bytes", "purged_at"
+    ]
+)
+class RetentionEvent(models.Model):
+    tenant = models.ForeignKey(
+        Tenant,
+        on_delete=models.CASCADE,
+        related_name="retention_events",
+        db_index=True
+    )
+    module_id = models.CharField(max_length=64, db_index=True)
+    status = models.CharField(
+        max_length=32,
+        default="Scheduled",
+        db_index=True
+    )  # Scheduled, Notified, Archived, Purged, Cancelled
+    degraded_at = models.DateTimeField(default=timezone.now, db_index=True)
+    purge_scheduled_at = models.DateTimeField(db_index=True)
+    notifications_sent = models.JSONField(default=list)
+    archive_file_url = models.CharField(max_length=512, blank=True, null=True)
+    reclaimed_bytes = models.BigIntegerField(default=0)
+    reclaimed_files_count = models.PositiveIntegerField(default=0)
+    reclaimed_db_rows_count = models.PositiveIntegerField(default=0)
+    purged_at = models.DateTimeField(null=True, blank=True)
+    initiated_by = models.CharField(max_length=64, default="System_Automated")
+    lifecycle_status = models.SmallIntegerField(default=1, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "control_plane_retention_events"
+        indexes = [
+            models.Index(fields=["tenant", "module_id", "status"]),
+            models.Index(fields=["purge_scheduled_at", "status"]),
+        ]
+        ordering = ["-purge_scheduled_at"]
+
+    def __str__(self):
+        return f"{self.tenant.subdomain} [{self.module_id}] - {self.status}"
+
+
+

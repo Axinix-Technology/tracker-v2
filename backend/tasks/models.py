@@ -117,6 +117,7 @@ class Task(models.Model):
     # Ticket integration
     linkedTicketId = models.ForeignKey("tickets.Ticket", on_delete=models.SET_NULL, null=True, blank=True, db_column="linked_ticket_id", related_name="linked_tasks")
     isFromTicket = models.BooleanField(default=False, db_column="is_from_ticket", db_index=True)
+    ticket_snapshot = models.JSONField(default=dict, blank=True, help_text="Immutable snapshot of linked ticket preserved when ticket is archived or purged")
 
     # Spec details
     userStory = models.TextField(blank=True, null=True, db_column="user_story")

@@ -15,20 +15,35 @@ logger = logging.getLogger("control_plane.services")
 @register_service("tenant")
 class TenantService(BaseService):
     def check_permission(self, context):
-        if context.is_superadmin:
+        is_root = getattr(context, "is_root_admin", False) or getattr(getattr(context, "user", None), "is_root_admin", False)
+        if is_root:
             return True
-        if not getattr(context, "user", None) or not getattr(context.user, "is_authenticated", False):
-            # Allow public subdomain/tenant lookup
+        user = getattr(context, "user", None)
+        user_plane = getattr(user, "plane", "client")
+        if user_plane == "platform":
+            role_id = getattr(getattr(user, "role", None), "role_id", "")
+            if role_id in ("root_admin", "superadmin"):
+                return True
+            if role_id == "management_viewer":
+                if context.action in ("read", "report", "statistics", "aggregate"):
+                    return True
+                raise AuthorizationError("Management Viewer has read-only access to tenants.", code="READ_ONLY_ROLE", status_code=403)
+        if not user or not getattr(user, "is_authenticated", False):
+            # Allow public subdomain lookup
             if context.action in ("read", "report", "statistics", "aggregate"):
                 return True
             return False
+        # Client users: cannot create, update, or delete tenants
         if context.action in ("read", "report", "statistics", "aggregate"):
             return True
-        # Creating or modifying tenants requires superadmin
-        return None
+        raise AuthorizationError("Only Platform Root Admin can provision or mutate tenants.", code="ROOT_ADMIN_REQUIRED", status_code=403)
 
     def get_policy_scope(self, context):
-        if context.is_superadmin:
+        is_root = getattr(context, "is_root_admin", False) or getattr(getattr(context, "user", None), "is_root_admin", False)
+        if is_root:
+            return Q()
+        user = getattr(context, "user", None)
+        if getattr(user, "plane", "client") == "platform":
             return Q()
         return Q(status="Active", lifecycle_status=1)
 
@@ -59,11 +74,13 @@ class TenantService(BaseService):
 @register_service("user_login")
 class UserLoginService(BaseService):
     def check_permission(self, context):
-        if context.is_superadmin:
+        is_root = getattr(context, "is_root_admin", False) or getattr(getattr(context, "user", None), "is_root_admin", False)
+        if is_root:
             return True
-        if not getattr(context, "user", None) or not getattr(context.user, "is_authenticated", False):
-            return False
-        return None
+        user = getattr(context, "user", None)
+        if getattr(user, "plane", "client") == "platform":
+            return True
+        raise AuthorizationError("Access to user logins directory is restricted to Platform Operators.", code="PLATFORM_ACCESS_FORBIDDEN", status_code=403)
 
     def get_policy_scope(self, context):
         return Q(is_active=True, lifecycle_status=1)
@@ -76,13 +93,20 @@ class UserLoginService(BaseService):
 @register_service("module")
 class ModuleService(BaseService):
     def check_permission(self, context):
-        if context.is_superadmin:
+        is_root = getattr(context, "is_root_admin", False) or getattr(getattr(context, "user", None), "is_root_admin", False)
+        if is_root:
             return True
-        if not getattr(context, "user", None) or not getattr(context.user, "is_authenticated", False):
-            return False
-        if context.action in ("read", "report", "statistics", "aggregate"):
-            return True
-        return None
+        user = getattr(context, "user", None)
+        user_plane = getattr(user, "plane", "client")
+        if user_plane == "platform":
+            role_id = getattr(getattr(user, "role", None), "role_id", "")
+            if role_id in ("root_admin", "superadmin"):
+                return True
+            if role_id == "management_viewer":
+                if context.action in ("read", "report", "statistics", "aggregate"):
+                    return True
+                raise AuthorizationError("Management Viewer has read-only access to modules.", code="READ_ONLY_ROLE", status_code=403)
+        raise AuthorizationError("Access to the global module catalog is restricted to Platform Operators.", code="PLATFORM_ACCESS_FORBIDDEN", status_code=403)
 
     def get_policy_scope(self, context):
         return Q(is_active=True, lifecycle_status=1)
@@ -106,12 +130,143 @@ class ModuleService(BaseService):
 @register_service("provisioning_run")
 class ProvisioningRunService(BaseService):
     def check_permission(self, context):
-        if context.is_superadmin:
+        is_root = getattr(context, "is_root_admin", False) or getattr(getattr(context, "user", None), "is_root_admin", False)
+        if is_root:
             return True
-        if not getattr(context, "user", None) or not getattr(context.user, "is_authenticated", False):
-            return False
-        return None
+        user = getattr(context, "user", None)
+        user_plane = getattr(user, "plane", "client")
+        if user_plane == "platform":
+            role_id = getattr(getattr(user, "role", None), "role_id", "")
+            if role_id in ("root_admin", "superadmin"):
+                return True
+            if role_id == "management_viewer":
+                if context.action in ("read", "report", "statistics", "aggregate"):
+                    return True
+                raise AuthorizationError("Management Viewer has read-only access to provisioning runs.", code="READ_ONLY_ROLE", status_code=403)
+        raise AuthorizationError("Access to provisioning runs is restricted to Platform Operators.", code="PLATFORM_ACCESS_FORBIDDEN", status_code=403)
 
     def get_policy_scope(self, context):
         return Q(lifecycle_status=1)
+
+
+# ============================================================================
+# 5. PLATFORM ROLE SERVICE
+# ============================================================================
+
+@register_service("platform_role")
+class PlatformRoleService(BaseService):
+    def check_permission(self, context):
+        is_root = getattr(context, "is_root_admin", False) or getattr(getattr(context, "user", None), "is_root_admin", False)
+        if is_root:
+            return True
+        user = getattr(context, "user", None)
+        if getattr(user, "plane", "client") == "platform":
+            if context.action in ("read", "report", "statistics"):
+                return True
+        raise AuthorizationError("Platform Role management requires Root Admin privileges.", code="ROOT_ADMIN_REQUIRED", status_code=403)
+
+    def get_policy_scope(self, context):
+        return Q(lifecycle_status=1)
+
+
+# ============================================================================
+# 6. PLATFORM USER SERVICE
+# ============================================================================
+
+@register_service("platform_user")
+class PlatformUserService(BaseService):
+    def check_permission(self, context):
+        is_root = getattr(context, "is_root_admin", False) or getattr(getattr(context, "user", None), "is_root_admin", False)
+        if is_root:
+            return True
+        user = getattr(context, "user", None)
+        if getattr(user, "plane", "client") == "platform":
+            if context.action in ("read", "report", "statistics"):
+                return True
+        raise AuthorizationError("Platform User management requires Root Admin privileges.", code="ROOT_ADMIN_REQUIRED", status_code=403)
+
+    def get_policy_scope(self, context):
+        return Q(lifecycle_status=1)
+
+    def get_forbidden_fields(self, context):
+        return ["password"]
+
+    def before_create(self, context, data):
+        from django.contrib.auth.hashers import make_password
+        if data.get("password"):
+            data["password"] = make_password(data["password"])
+        data["lifecycle_status"] = 1
+        return data
+
+    def before_update(self, context, instance, data):
+        from django.contrib.auth.hashers import make_password
+        if "password" in data and data["password"]:
+            data["password"] = make_password(data["password"])
+        return data
+
+
+# ============================================================================
+# 7. RETENTION POLICY SERVICE
+# ============================================================================
+
+@register_service("retention_policy")
+class RetentionPolicyService(BaseService):
+    def check_permission(self, context):
+        is_root = getattr(context, "is_root_admin", False) or getattr(getattr(context, "user", None), "is_root_admin", False)
+        if is_root:
+            return True
+        user = getattr(context, "user", None)
+        if getattr(user, "plane", "client") == "platform":
+            if context.action in ("read", "report", "statistics"):
+                return True
+            raise AuthorizationError("Management Viewer has read-only access to retention policies.", code="READ_ONLY_ROLE", status_code=403)
+        raise AuthorizationError("Access to retention policies is restricted to Platform Operators.", code="PLATFORM_ACCESS_FORBIDDEN", status_code=403)
+
+    def get_policy_scope(self, context):
+        return Q(lifecycle_status=1)
+
+
+# ============================================================================
+# 8. RETENTION EVENT SERVICE
+# ============================================================================
+
+@register_service("retention_event")
+class RetentionEventService(BaseService):
+    def check_permission(self, context):
+        is_root = getattr(context, "is_root_admin", False) or getattr(getattr(context, "user", None), "is_root_admin", False)
+        if is_root:
+            return True
+        user = getattr(context, "user", None)
+        if getattr(user, "plane", "client") == "platform":
+            if context.action in ("read", "report", "statistics"):
+                return True
+            raise AuthorizationError("Management Viewer has read-only access to retention events.", code="READ_ONLY_ROLE", status_code=403)
+        raise AuthorizationError("Access to retention events is restricted to Platform Operators.", code="PLATFORM_ACCESS_FORBIDDEN", status_code=403)
+
+    def get_policy_scope(self, context):
+        return Q(lifecycle_status=1)
+
+    def before_update(self, context, instance, data):
+        action_cmd = data.get("action_cmd") or data.get("action")
+        if action_cmd == "PURGE_NOW":
+            from .retention_worker import StorageRetentionWorker
+            result = StorageRetentionWorker.execute_purge_event(instance)
+            data["status"] = "Purged"
+            data["purged_at"] = timezone.now()
+            data["reclaimed_bytes"] = result.get("reclaimed_bytes", 0)
+            data["reclaimed_files_count"] = result.get("reclaimed_files_count", 0)
+            data["reclaimed_db_rows_count"] = result.get("reclaimed_db_rows_count", 0)
+            data["initiated_by"] = "Root_Admin_Manual"
+
+        elif action_cmd == "EXTEND_GRACE":
+            import datetime
+            days_to_add = int(data.get("extend_days", 30))
+            data["purge_scheduled_at"] = instance.purge_scheduled_at + datetime.timedelta(days=days_to_add)
+
+        elif action_cmd == "RESTORE":
+            data["status"] = "Cancelled"
+
+        return data
+
+
 

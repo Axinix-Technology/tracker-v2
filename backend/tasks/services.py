@@ -149,6 +149,20 @@ class TaskService(BaseService):
 
         if data.get("linkedTicketId") or data.get("linkedTicketId_id"):
             data["isFromTicket"] = True
+            tck_id = data.get("linkedTicketId_id") or data.get("linkedTicketId")
+            if isinstance(tck_id, (int, str)):
+                try:
+                    from tickets.models import Ticket
+                    tck = Ticket.objects.filter(id=int(tck_id)).first()
+                    if tck:
+                        data["ticket_snapshot"] = {
+                            "ticket_id": tck.ticket_id,
+                            "title": tck.title,
+                            "priority": getattr(tck, "priority", "Medium"),
+                            "ticket_status": getattr(tck, "ticket_status", "Open"),
+                        }
+                except Exception:
+                    pass
 
         data["status"] = initial_stage
         data["metaStatus"] = data.get("metaStatus", "active")
@@ -164,7 +178,34 @@ class TaskService(BaseService):
             data["status"] = data.pop("stage")
         if "estimated_hours" in data and "estimatedHours" not in data:
             data["estimatedHours"] = data.pop("estimated_hours")
-        parent_id = data.get("parentTask") or data.get("parentTask_id")
+        if data.get("linkedTicketId") or data.get("linkedTicketId_id"):
+            data["isFromTicket"] = True
+            tck_id = data.get("linkedTicketId_id") or data.get("linkedTicketId")
+            if isinstance(tck_id, (int, str)):
+                try:
+                    from tickets.models import Ticket
+                    tck = Ticket.objects.filter(id=int(tck_id)).first()
+                    if tck:
+                        data["ticket_snapshot"] = {
+                            "ticket_id": tck.ticket_id,
+                            "title": tck.title,
+                            "priority": getattr(tck, "priority", "Medium"),
+                            "ticket_status": getattr(tck, "ticket_status", "Open"),
+                        }
+                except Exception:
+                    pass
+        elif instance.linkedTicketId and not instance.ticket_snapshot:
+            # Ensure existing linked tickets are backfilled into snapshot
+            try:
+                tck = instance.linkedTicketId
+                data["ticket_snapshot"] = {
+                    "ticket_id": tck.ticket_id,
+                    "title": tck.title,
+                    "priority": getattr(tck, "priority", "Medium"),
+                    "ticket_status": getattr(tck, "ticket_status", "Open"),
+                }
+            except Exception:
+                pass
         if parent_id and str(parent_id) == str(instance.id):
             raise ValueError("A task cannot be its own parent.")
 

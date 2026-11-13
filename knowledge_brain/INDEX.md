@@ -11,7 +11,7 @@
 - [Attendance](file:///d:/Axinix%20Projects/tracker-v2/knowledge_brain/Attendance/MODULE_BRAIN.md) — Attendance suite: punch regularization, leaves, comp-off, and holiday calendars.
 - [Billing](file:///d:/Axinix%20Projects/tracker-v2/knowledge_brain/Billing/MODULE_BRAIN.md) — Client Invoicing & Accounting suite: quotations, revisions, order acknowledgements, invoices, payments, journals, ledgers, period closures.
 - [Common](file:///d:/Axinix%20Projects/tracker-v2/knowledge_brain/Common/) — Shared utilities, system constants, and base exceptions.
-- [ControlPlane](file:///d:/Axinix%20Projects/tracker-v2/knowledge_brain/ControlPlane/MODULE_BRAIN.md) — Multi-Tenant Control Plane: organization directories, user logins, and database provisioning logs.
+- [ControlPlane](file:///d:/Axinix%20Projects/tracker-v2/knowledge_brain/ControlPlane/MODULE_BRAIN.md) — Multi-Tenant Control Plane: organization directories, user logins, database provisioning logs, and [Modular Entitlements Audit](file:///d:/Axinix%20Projects/tracker-v2/knowledge_brain/ControlPlane/MODULAR_ENTITLEMENTS_AUDIT.md).
 - [Core](file:///d:/Axinix%20Projects/tracker-v2/knowledge_brain/Core/) — Django Populate Core pipeline (10-stage execution engine, ABAC, and audit logger).
 - [CRM](file:///d:/Axinix%20Projects/tracker-v2/knowledge_brain/CRM/MODULE_BRAIN.md) — Customer Relationship Management: leads, contacts, opportunities, deal pipelines, and client meetings.
 - [Dashboard](file:///d:/Axinix%20Projects/tracker-v2/knowledge_brain/Dashboard/) — Dynamic role-based dashboard layouts, widget schemas, and KPI aggregation.
@@ -217,3 +217,22 @@
 ### 6. Branded 404 Recovery Page (`Frontend/src/pages/[...all].jsx`)
 - **Catch-All Routing**: Registered under `vite-plugin-pages` to catch all unmapped routes.
 - **Design Tokens & Recovery**: Uses WorkHub ERP design tokens (`--brand-solid`, `--surface-1`) providing clear navigation back to the Dashboard (`/dashboard`) or previous screen.
+
+---
+
+## Phase 10 Implementation Summary: Modular SaaS Entitlements & SuperAdmin Permission Leakage Audit
+
+### 1. Entitlements & Subscription Lifecycle Test Suites
+- **Interactive Console Diagnostic Simulator** ([`backend/simulate_modular_entitlements_test.py`](file:///d:/Axinix%20Projects/tracker-v2/backend/simulate_modular_entitlements_test.py)):
+  - Evaluates Control Plane Root Admin vs Client Plane Tenant SuperAdmin across all 4 lifecycle phases:
+    1. **Initial Purchase** (`['attendance']`): Attendance & Core valid; probes unpurchased modules (Payroll, CRM, Billing, Assets, Recruitment).
+    2. **Upgrade** (`['attendance', 'payroll']`): Probes instant unlocking of Payroll while maintaining restrictions on unpurchased modules.
+    3. **Degrade / Downgrade** (`['attendance']`): Verifies revocation of Payroll access and historical data preservation.
+    4. **Control Plane Root Admin**: Verifies system-wide authority over multi-tenant provisioning.
+  - Generates ASCII audit matrix with exact HTTP status codes and leakage diagnostics.
+- **Django Automated Test Case** ([`backend/tests_api/test_modular_entitlements_audit.py`](file:///d:/Axinix%20Projects/tracker-v2/backend/tests_api/test_modular_entitlements_audit.py)):
+  - Pure API contract test suite integrated with Django `manage.py test`.
+
+### 2. Living Knowledge Brain Documentation
+- Created [`knowledge_brain/ControlPlane/MODULAR_ENTITLEMENTS_AUDIT.md`](file:///d:/Axinix%20Projects/tracker-v2/knowledge_brain/ControlPlane/MODULAR_ENTITLEMENTS_AUDIT.md) detailing root cause analysis of universal SuperAdmin bypass and the architectural blueprint for tenant-scoped module gating.
+

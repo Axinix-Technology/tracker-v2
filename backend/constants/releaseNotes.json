@@ -1,10 +1,26 @@
 [
   {
+    "version": "4.3.0",
+    "releaseDate": "2026-11-13",
+    "title": "Release v4.3.0",
+    "tagline": "Platform enhancements and continuous improvements.",
+    "isLatest": true,
+    "type": "Feature & Maintenance Release",
+    "categories": {
+      "features": [],
+      "improvements": [
+        "Release increment to v4.3.0"
+      ],
+      "security": [],
+      "fixes": []
+    }
+  },
+  {
     "version": "4.2.0",
     "releaseDate": "2026-11-12",
     "title": "Release v4.2.0 - Website Configuration & Showcase CMS",
     "tagline": "Dynamic website configuration, showcase content management, and external portal modernization.",
-    "isLatest": true,
+    "isLatest": false,
     "type": "Feature & Maintenance Release",
     "categories": {
       "features": [
